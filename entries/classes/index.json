@@ -1,0 +1,12 @@
+{
+  "files": [
+    "vespera.json",
+    "rogue.json",
+    "cleric.json",
+    "mage.json",
+    "warrior.json",
+    "enchantress.json",
+    "incubus.json",
+    "siren.json"
+  ]
+}

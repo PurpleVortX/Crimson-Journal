@@ -1,0 +1,87 @@
+<!-- index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Crimson Key — Bestiary</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="seal" aria-hidden="true"></div>
+      <div class="titles">
+        <div class="game">The Crimson Key</div>
+        <div class="page">Bestiary & Races</div>
+      </div>
+    </div>
+
+    <div class="top-controls">
+      <div class="search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="q" type="search" placeholder="Search races, traits, notes…" autocomplete="off" />
+      </div>
+
+      <select id="classLens" class="select" title="Class subtitle lens">
+        <option value="">Class Lens: None</option>
+      </select>
+
+      <select id="tagFilter" class="select" title="Filter by tag">
+        <option value="">Filter: All tags</option>
+      </select>
+
+      <button id="btnRandom" class="btn" type="button">Random</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="shelf" aria-label="Bestiary Shelf">
+      <div class="shelf-head">
+        <div class="shelf-title">Sections</div>
+        <div class="shelf-sub">Races</div>
+      </div>
+
+      <nav class="groups" id="groups"></nav>
+
+      <div class="shelf-foot">
+        <button id="btnAll" class="pill" type="button">All</button>
+        <button id="btnAtoZ" class="pill" type="button">A–Z</button>
+        <button id="btnClear" class="pill" type="button">Clear</button>
+      </div>
+    </aside>
+
+    <section class="book" aria-label="Bestiary Pages">
+      <div class="paper left">
+        <div class="paper-inner">
+          <div class="list-head">
+            <div class="list-title">Index</div>
+            <div class="list-meta" id="resultsMeta">—</div>
+          </div>
+
+          <div class="cards" id="cards"></div>
+        </div>
+        <div class="page-num" id="pageNumLeft">I</div>
+      </div>
+
+      <div class="spine" aria-hidden="true"></div>
+
+      <div class="paper right">
+        <div class="paper-inner" id="detail">
+          <div class="empty">
+            <div class="empty-title">Open an entry</div>
+            <div class="empty-text">Select a race on the left to view its bestiary page.</div>
+          </div>
+        </div>
+        <div class="page-num" id="pageNumRight">II</div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "files": [
+    "goliath.json",
+    "dwarf.json",
+    "human.json",
+    "elf.json",
+    "gnome.json",
+    "aasimar.json",
+    "halfling.json",
+    "succubus.json",
+    "vampire.json",
+    "nereid.json",
+    "harpy.json",
+    "incubus.json",
+    "tiefling.json",
+    "vespera.json",
+    "dark_vespera.json"
+  ]
+}
