@@ -1,0 +1,51 @@
+{
+  "world": {
+    "title": "The Crimson Key",
+    "tagline": "A living codex of dusk-born beauty, ancient vows, and hidden courts."
+  },
+  "lore": [
+    {
+      "id": "lore-1",
+      "title": "The World at a Glance",
+      "section": "Overview",
+      "body": "Write your opening overview here.\n\nUse [[Links]] to connect pages.\n\n## Tone\n- Horror-fantasy\n- Dusk courts\n- Lost keys\n",
+      "updatedAt": 0
+    }
+  ],
+  "races": [
+    {
+      "id": "race-1",
+      "name": "Vespera",
+      "category": "Duskborn",
+      "vibe": "Elegance of twilight, human beauty touched by the unreal.",
+      "traits": ["noctilucent aura", "soft uncanny calm", "ritual magic"],
+      "body": "Describe the Vespera here.\n\n- Culture\n- Biology\n- Magic\n- Weaknesses\n- Relations\n",
+      "updatedAt": 0
+    },
+    {
+      "id": "race-2",
+      "name": "Aurestra",
+      "category": "Radiant",
+      "vibe": "Humanoid serenity that makes the world feel gentle and whole.",
+      "traits": ["pearlescent luminosity", "reassuring presence", "refined grace"],
+      "body": "Describe the Aurestra here.\n\n> An Aurestra is not merely beautiful — they feel like a moment where reality becomes kind.\n",
+      "updatedAt": 0
+    }
+  ],
+  "characters": [
+    {
+      "id": "char-1",
+      "name": "Violethyn Emmara Kinsyl",
+      "race": "Vespera",
+      "role": "Bearer of the Quiet Key",
+      "age": "19",
+      "origin": "The Garden Path of First Dusk",
+      "keywords": ["calm", "radiant", "secretive"],
+      "bio": "Write her bio here.\n\n## Notes\n- Motivations\n- Fear\n- Secret\n",
+      "relationships": [
+        { "name": "—", "type": "unknown", "note": "Add relationships in the editor." }
+      ],
+      "updatedAt": 0
+    }
+  ]
+}

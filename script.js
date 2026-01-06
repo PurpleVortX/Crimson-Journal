@@ -1,457 +1,1058 @@
-// script.js
-(() => {
-  // ====== CONFIG: folder-based entries ======
-  const PATHS = {
-    racesIndex: "entries/races/index.json",
-    racesDir:   "entries/races/",
-    classesIndex: "entries/classes/index.json",
-    classesDir:   "entries/classes/",
-  };
+/* Purple Codex — local-first world bible
+   - Loads default data from /data/world.json
+   - Overrides with localStorage if present
+   - CRUD for lore/races/characters
+   - Search across all
+   - Export/import JSON
+*/
 
-  const elQ = document.getElementById("q");
-  const elClassLens = document.getElementById("classLens");
-  const elTag = document.getElementById("tagFilter");
-  const elGroups = document.getElementById("groups");
-  const elCards = document.getElementById("cards");
-  const elDetail = document.getElementById("detail");
-  const elMeta = document.getElementById("resultsMeta");
+const STORAGE_KEY = "purple_codex_world_v1";
+const RECENT_KEY = "purple_codex_recent_v1";
+const DEFAULT_DATA_URL = "data/world.json";
 
-  const elBtnAll = document.getElementById("btnAll");
-  const elBtnAtoZ = document.getElementById("btnAtoZ");
-  const elBtnClear = document.getElementById("btnClear");
-  const elBtnRandom = document.getElementById("btnRandom");
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const now = () => Date.now();
 
-  const elToast = document.getElementById("toast");
+let state = {
+  world: { title: "Your World", tagline: "World Bible • Lore • Races • Characters" },
+  lore: [],
+  races: [],
+  characters: []
+};
 
-  const state = {
-    races: [],
-    classes: [],
-    activeRaceId: null,
-    classLens: "",
-    query: "",
-    group: "All",
-    tag: "",
-  };
+let ui = {
+  currentView: "home",
+  selectedLoreId: null,
+  selectedRaceId: null,
+  selectedCharId: null,
+  editingLore: false,
+  editingRace: false,
+  editingChar: false
+};
 
-  const safe = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[m]));
+/* ---------- Utilities ---------- */
 
-  const toast = (msg) => {
-    if (!elToast) return;
-    elToast.textContent = msg;
-    elToast.style.opacity = "1";
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => (elToast.style.opacity = "0"), 1200);
-  };
+function uid(prefix){
+  return `${prefix}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+}
 
-  async function fetchJSON(path) {
-    const r = await fetch(path, { cache: "no-store" });
-    if (!r.ok) throw new Error(path);
-    return r.json();
-  }
+function safeText(s){
+  return (s ?? "").toString();
+}
 
-  function asList(idx) {
-    if (Array.isArray(idx)) return idx;
-    if (idx && typeof idx === "object") {
-      if (Array.isArray(idx.files)) return idx.files;
-      if (Array.isArray(idx.entries)) return idx.entries;
-      if (Array.isArray(idx.races)) return idx.races;
-      if (Array.isArray(idx.classes)) return idx.classes;
-    }
+function escapeHtml(str){
+  return safeText(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function setRecent(type, id, title){
+  const entry = { type, id, title, t: now() };
+  const rec = loadRecent();
+  const filtered = rec.filter(x => !(x.type === type && x.id === id));
+  filtered.unshift(entry);
+  const trimmed = filtered.slice(0, 10);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(trimmed));
+  renderHome();
+}
+
+function loadRecent(){
+  try{
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  }catch{
     return [];
   }
+}
 
-  function normalizeEntryFileName(x) {
-    // allow "elf.json" or { "file":"elf.json" } or { "path":"elf.json" }
-    if (typeof x === "string") return x.trim();
-    if (x && typeof x === "object") return String(x.file || x.path || "").trim();
-    return "";
-  }
+function clearRecent(){
+  localStorage.removeItem(RECENT_KEY);
+  renderHome();
+}
 
-  async function loadEntries(indexPath, dirPath) {
-    const idx = await fetchJSON(indexPath);
-    const files = asList(idx).map(normalizeEntryFileName).filter(Boolean);
-    const unique = [...new Set(files)];
+/* ---------- Markdown-ish renderer ---------- */
+/* Supports:
+   - headings # ## ###
+   - bold **text**
+   - italics *text*
+   - inline code `code`
+   - blockquote > ...
+   - unordered list - item
+   - links [[Page Title]] => clickable lore link
+*/
+function renderMarkdown(md){
+  const lines = safeText(md).replace(/\r\n/g,"\n").split("\n");
+  let out = [];
+  let inList = false;
 
-    const results = await Promise.allSettled(
-      unique.map(f => fetchJSON(dirPath + f))
-    );
+  const closeList = () => {
+    if(inList){ out.push("</ul>"); inList = false; }
+  };
 
-    const ok = [];
-    const bad = [];
-    for (let i = 0; i < results.length; i++) {
-      const res = results[i];
-      if (res.status === "fulfilled") ok.push(res.value);
-      else bad.push(unique[i]);
+  for(const rawLine of lines){
+    let line = rawLine;
+
+    // blockquote
+    if(line.startsWith("> ")){
+      closeList();
+      out.push(`<blockquote>${inlineMd(line.slice(2))}</blockquote>`);
+      continue;
     }
 
-    if (bad.length) toast(`Missing: ${bad.slice(0, 3).join(", ")}${bad.length > 3 ? "…" : ""}`);
-    return ok;
-  }
-
-  function idOf(r) {
-    return (r.id || r.key || r.name || r.race || "").toString().trim() || ("entry-" + Math.random().toString(16).slice(2));
-  }
-  function nameOf(r) {
-    return (r.name || r.race || r.id || "Entry").toString();
-  }
-
-  function collectTags(r) {
-    const tags = [];
-    const addMany = (x) => {
-      if (!x) return;
-      if (Array.isArray(x)) x.forEach(v => v && tags.push(String(v)));
-      else tags.push(String(x));
-    };
-    addMany(r.tags);
-    addMany(r.traits);
-    addMany(r.affinities);
-    addMany(r.type);
-    addMany(r.category);
-    return [...new Set(tags.map(t => t.trim()).filter(Boolean))].slice(0, 12);
-  }
-
-  function collectText(r) {
-    const parts = [];
-    const pushMany = (x) => {
-      if (!x) return;
-      if (Array.isArray(x)) x.forEach(v => v && parts.push(String(v)));
-      else parts.push(String(x));
-    };
-    pushMany(r.description);
-    pushMany(r.notes);
-    pushMany(r.traits);
-    pushMany(r.tags);
-    pushMany(r.title);
-    pushMany(r.lore);
-    return parts.join(" ").toLowerCase();
-  }
-
-  function tapePhoto(src, alt) {
-    if (!src) return "";
-    return `
-      <div class="photo-frame">
-        <div class="tape"></div>
-        <div class="tape right"></div>
-        <img src="${safe(src)}" alt="${safe(alt)}" loading="lazy" />
-      </div>
-    `;
-  }
-
-  function buildClassLens() {
-    elClassLens.innerHTML = `<option value="">Class Lens: None</option>`;
-    for (const c of state.classes) {
-      const name = (c.name || c.class || c.id || "Class").toString();
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = `Class Lens: ${name}`;
-      elClassLens.appendChild(opt);
+    // headings
+    if(/^###\s+/.test(line)){
+      closeList();
+      out.push(`<h3>${inlineMd(line.replace(/^###\s+/,""))}</h3>`);
+      continue;
     }
-    elClassLens.value = state.classLens || "";
-  }
-
-  function buildTagFilter() {
-    const all = new Set();
-    state.races.forEach(r => collectTags(r).forEach(t => all.add(t)));
-    const tags = [...all].sort((a,b)=>a.localeCompare(b));
-
-    elTag.innerHTML = `<option value="">Filter: All tags</option>`;
-    for (const t of tags) {
-      const opt = document.createElement("option");
-      opt.value = t;
-      opt.textContent = `Tag: ${t}`;
-      elTag.appendChild(opt);
+    if(/^##\s+/.test(line)){
+      closeList();
+      out.push(`<h2>${inlineMd(line.replace(/^##\s+/,""))}</h2>`);
+      continue;
     }
-    elTag.value = state.tag || "";
-  }
-
-  function buildGroups() {
-    elGroups.innerHTML = "";
-
-    const quick = document.createElement("div");
-    quick.className = "group";
-    quick.innerHTML = `<div class="group-title">Quick</div><div class="group-items"></div>`;
-    const qi = quick.querySelector(".group-items");
-
-    const mk = (label, value) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "group-btn" + (state.group === value ? " active" : "");
-      b.textContent = label;
-      b.addEventListener("click", () => { state.group = value; render(); });
-      qi.appendChild(b);
-    };
-    mk("All", "All");
-    mk("A–Z", "A–Z");
-    elGroups.appendChild(quick);
-
-    const letters = document.createElement("div");
-    letters.className = "group";
-    letters.innerHTML = `<div class="group-title">Letters</div><div class="group-items"></div>`;
-    const li = letters.querySelector(".group-items");
-    ["A–E","F–J","K–O","P–T","U–Z"].forEach(bucket => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "group-btn" + (state.group === bucket ? " active" : "");
-      btn.textContent = bucket;
-      btn.addEventListener("click", () => { state.group = bucket; render(); });
-      li.appendChild(btn);
-    });
-    elGroups.appendChild(letters);
-
-    const counts = new Map();
-    state.races.forEach(r => collectTags(r).forEach(t => counts.set(t, (counts.get(t)||0)+1)));
-    const topTags = [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]);
-
-    if (topTags.length) {
-      const tags = document.createElement("div");
-      tags.className = "group";
-      tags.innerHTML = `<div class="group-title">Common Tags</div><div class="group-items"></div>`;
-      const ti = tags.querySelector(".group-items");
-      for (const t of topTags) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "group-btn" + (state.group === t ? " active" : "");
-        btn.textContent = t;
-        btn.addEventListener("click", () => { state.group = t; render(); });
-        ti.appendChild(btn);
-      }
-      elGroups.appendChild(tags);
-    }
-  }
-
-  function inLetterBucket(name, bucket) {
-    const c = (name[0] || "").toUpperCase();
-    if (!c) return false;
-    const ranges = {
-      "A–E": ["A","E"],
-      "F–J": ["F","J"],
-      "K–O": ["K","O"],
-      "P–T": ["P","T"],
-      "U–Z": ["U","Z"],
-    };
-    const r = ranges[bucket];
-    if (!r) return false;
-    return c >= r[0] && c <= r[1];
-  }
-
-  function filteredRaces() {
-    const q = (state.query || "").trim().toLowerCase();
-    const tag = (state.tag || "").trim();
-
-    let arr = state.races.slice();
-
-    if (state.group === "A–Z") {
-      arr.sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
-    } else if (["A–E","F–J","K–O","P–T","U–Z"].includes(state.group)) {
-      arr = arr.filter(r => inLetterBucket(nameOf(r), state.group))
-               .sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
-    } else if (state.group && state.group !== "All") {
-      arr = arr.filter(r => collectTags(r).some(t => t.toLowerCase() === state.group.toLowerCase()))
-               .sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
+    if(/^#\s+/.test(line)){
+      closeList();
+      out.push(`<h1>${inlineMd(line.replace(/^#\s+/,""))}</h1>`);
+      continue;
     }
 
-    if (tag) {
-      arr = arr.filter(r => collectTags(r).some(t => t.toLowerCase() === tag.toLowerCase()));
+    // list
+    if(/^\-\s+/.test(line)){
+      if(!inList){ out.push("<ul>"); inList = true; }
+      out.push(`<li>${inlineMd(line.replace(/^\-\s+/,""))}</li>`);
+      continue;
     }
 
-    if (q) {
-      arr = arr.filter(r => nameOf(r).toLowerCase().includes(q) || collectText(r).includes(q));
+    // blank
+    if(line.trim() === ""){
+      closeList();
+      out.push("<div style='height:10px'></div>");
+      continue;
     }
 
-    return arr;
+    // paragraph
+    closeList();
+    out.push(`<p>${inlineMd(line)}</p>`);
   }
 
-  function renderEmpty() {
-    elDetail.innerHTML = `
-      <div class="empty">
-        <div>
-          <div class="empty-title">No results</div>
-          <div class="empty-text">Try clearing filters or changing the search.</div>
-        </div>
-      </div>
-    `;
-  }
+  closeList();
+  return out.join("\n");
+}
 
-  function statsTable(r) {
-    const s = r.stats || r.baseStats || r.defaults || null;
-    if (!s || typeof s !== "object") return "";
+function inlineMd(text){
+  let t = escapeHtml(text);
 
-    const rows = Object.entries(s).map(([k,v]) => `
-      <tr><th>${safe(k)}</th><td>${safe(v)}</td></tr>
-    `).join("");
+  // inline code
+  t = t.replace(/`([^`]+)`/g, (_m, g1) => `<code>${escapeHtml(g1)}</code>`);
 
-    return `
-      <div class="hr"></div>
-      <table class="table" aria-label="Stats"><tbody>${rows}</tbody></table>
-    `;
-  }
+  // bold
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
 
-  function renderDetail(r) {
-    const name = nameOf(r);
-    const title = (r.title || "").toString().trim();
-    const lens = (state.classLens || "").trim();
-    const subtitleParts = [];
-    if (lens) subtitleParts.push(`Class: ${lens}`);
-    if (title) subtitleParts.push(title);
+  // italics (simple)
+  t = t.replace(/\*([^*]+)\*/g, "<i>$1</i>");
 
-    const img = (r.image || "").toString().trim();
-    const desc = Array.isArray(r.description) ? r.description : (r.description ? [r.description] : []);
-    const notes = Array.isArray(r.notes) ? r.notes : (r.notes ? [r.notes] : []);
-    const traits = Array.isArray(r.traits) ? r.traits : (r.traits ? [r.traits] : []);
-    const tags = collectTags(r);
+  // [[Links]] to lore titles
+  t = t.replace(/\[\[([^\]]+)\]\]/g, (_m, title) => {
+    const name = title.trim();
+    const id = findLoreIdByTitle(name);
+    const data = id ? `data-link="${id}"` : `data-link-missing="${escapeHtml(name)}"`;
+    return `<a href="#" class="wikilink" ${data}>${escapeHtml(name)}</a>`;
+  });
 
-    elDetail.innerHTML = `
-      <div class="entry-title">${safe(name)}</div>
-      ${subtitleParts.length ? `<div class="entry-sub">${safe(subtitleParts.join(" • "))}</div>` : `<div class="entry-sub">—</div>`}
-      <div class="hr"></div>
+  return t;
+}
 
-      ${img ? tapePhoto(img, name) : ""}
+function findLoreIdByTitle(title){
+  const x = state.lore.find(p => p.title.toLowerCase() === title.toLowerCase());
+  return x?.id || null;
+}
 
-      ${(desc.length ? desc : ["Entry still being written."]).map(t => `<div class="p">${safe(t)}</div>`).join("")}
+/* ---------- Persistence ---------- */
 
-      ${statsTable(r)}
+function saveAll(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  toast("Saved.");
+}
 
-      ${traits.length ? `<div class="hr"></div>${traits.map(t => `<div class="p">${safe(String(t).startsWith("•") ? t : "• " + t)}</div>`).join("")}` : ""}
-
-      ${notes.length ? `<div class="hr"></div>${notes.map(t => `<div class="p">${safe(String(t).startsWith("•") ? t : "• " + t)}</div>`).join("")}` : ""}
-
-      ${tags.length ? `<div class="hr"></div><div class="p"><b>Tags:</b> ${tags.map(t => `<span class="tag">${safe(t)}</span>`).join(" ")}</div>` : ""}
-    `;
-  }
-
-  function renderCards() {
-    const arr = filteredRaces();
-    elCards.innerHTML = "";
-
-    elMeta.textContent = `${arr.length} of ${state.races.length}`;
-
-    for (const r of arr) {
-      const id = idOf(r);
-      const name = nameOf(r);
-      const tags = collectTags(r).slice(0, 4);
-      const sig = name.trim()[0]?.toUpperCase() || "•";
-
-      const card = document.createElement("div");
-      card.className = "card" + (state.activeRaceId === id ? " active" : "");
-      card.dataset.id = id;
-
-      card.innerHTML = `
-        <div class="sigil">${safe(sig)}</div>
-        <div class="info">
-          <div class="name">${safe(name)}</div>
-          <div class="tags">${tags.map(t => `<span class="tag">${safe(t)}</span>`).join("")}</div>
-        </div>
-      `;
-
-      card.addEventListener("click", () => {
-        state.activeRaceId = id;
-        render();
-        renderDetail(r);
-      });
-
-      elCards.appendChild(card);
-    }
-
-    if (!arr.length) return renderEmpty();
-
-    if (!state.activeRaceId) {
-      state.activeRaceId = idOf(arr[0]);
-      render();
-      renderDetail(arr[0]);
+async function loadInitial(){
+  // LocalStorage wins
+  const local = localStorage.getItem(STORAGE_KEY);
+  if(local){
+    try{
+      state = JSON.parse(local);
+      normalizeState();
       return;
-    }
-
-    const active = arr.find(x => idOf(x) === state.activeRaceId);
-    if (!active) {
-      state.activeRaceId = idOf(arr[0]);
-      render();
-      renderDetail(arr[0]);
-    } else {
-      renderDetail(active);
+    }catch{
+      // fallthrough to default
     }
   }
 
-  function render() {
-    buildGroups();
-    renderCards();
+  // Load default file
+  const res = await fetch(DEFAULT_DATA_URL);
+  const data = await res.json();
+  state = data;
+  normalizeState();
+  // set timestamps if missing
+  stampAllIfZero();
+  saveAll();
+}
+
+function normalizeState(){
+  state.world ??= { title:"Your World", tagline:"World Bible • Lore • Races • Characters" };
+  state.lore ??= [];
+  state.races ??= [];
+  state.characters ??= [];
+}
+
+function stampAllIfZero(){
+  const t = now();
+  state.lore.forEach(x => { if(!x.updatedAt) x.updatedAt = t; });
+  state.races.forEach(x => { if(!x.updatedAt) x.updatedAt = t; });
+  state.characters.forEach(x => { if(!x.updatedAt) x.updatedAt = t; });
+}
+
+function wipeLocal(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(RECENT_KEY);
+  location.reload();
+}
+
+/* ---------- Navigation ---------- */
+
+function setView(name){
+  ui.currentView = name;
+  $$(".view").forEach(v => v.classList.remove("active"));
+  $(`#view-${name}`).classList.add("active");
+
+  $$(".navItem").forEach(b => b.classList.remove("active"));
+  $(`.navItem[data-view="${name}"]`).classList.add("active");
+
+  if(name === "home") renderHome();
+  if(name === "lore") renderLore();
+  if(name === "races") renderRaces();
+  if(name === "characters") renderCharacters();
+  if(name === "search") renderSearch();
+  if(name === "settings") renderSettings();
+}
+
+/* ---------- Rendering ---------- */
+
+function renderTop(){
+  $("#worldTitle").textContent = state.world.title || "Your World";
+  $("#worldTagline").textContent = state.world.tagline || "";
+  $("#worldSubtitle").textContent = state.world.tagline || "World Bible • Lore • Races • Characters";
+}
+
+function renderHome(){
+  renderTop();
+  $("#statLore").textContent = state.lore.length.toString();
+  $("#statRaces").textContent = state.races.length.toString();
+  $("#statChars").textContent = state.characters.length.toString();
+
+  const starters = [
+    "History",
+    "Magic",
+    "Factions",
+    "Locations",
+    "Cosmology",
+    "Artifacts",
+    "Creatures",
+    "Timeline",
+    "Rules of the World"
+  ];
+  const wrap = $("#starterChips");
+  wrap.innerHTML = "";
+  starters.forEach(s => {
+    const chip = document.createElement("button");
+    chip.className = "chip";
+    chip.textContent = s;
+    chip.onclick = () => {
+      const page = newLorePage({ title: s, section: "Starter", body: `## ${s}\nWrite here.\n` });
+      ui.selectedLoreId = page.id;
+      setView("lore");
+    };
+    wrap.appendChild(chip);
+  });
+
+  const rec = loadRecent();
+  const rwrap = $("#recentList");
+  rwrap.innerHTML = "";
+  if(rec.length === 0){
+    rwrap.innerHTML = `<div class="muted small">No recent edits yet.</div>`;
+  }else{
+    for(const r of rec){
+      const div = document.createElement("div");
+      div.className = "recentItem";
+      div.innerHTML = `<div class="listTitle">${escapeHtml(r.title)}</div>
+        <div class="listMeta">${escapeHtml(r.type)} • ${new Date(r.t).toLocaleString()}</div>`;
+      div.onclick = () => {
+        if(r.type === "lore"){ ui.selectedLoreId = r.id; setView("lore"); }
+        if(r.type === "race"){ ui.selectedRaceId = r.id; setView("races"); }
+        if(r.type === "character"){ ui.selectedCharId = r.id; setView("characters"); }
+      };
+      rwrap.appendChild(div);
+    }
   }
+}
 
-  function wire() {
-    elQ.addEventListener("input", () => {
-      state.query = elQ.value || "";
-      state.activeRaceId = null;
-      render();
+/* ---------- Lore ---------- */
+
+function renderLore(){
+  renderTop();
+  populateLoreSectionFilter();
+  const filterText = $("#loreFilter").value.toLowerCase();
+  const section = $("#loreSectionFilter").value;
+
+  const list = $("#loreList");
+  list.innerHTML = "";
+
+  const items = state.lore
+    .slice()
+    .sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0))
+    .filter(p => {
+      const okText = (p.title + " " + p.section + " " + p.body).toLowerCase().includes(filterText);
+      const okSection = !section || (safeText(p.section).toLowerCase() === section.toLowerCase());
+      return okText && okSection;
     });
 
-    elClassLens.addEventListener("change", () => {
-      state.classLens = elClassLens.value || "";
-      const arr = filteredRaces();
-      const active = arr.find(r => idOf(r) === state.activeRaceId) || arr[0];
-      if (active) renderDetail(active);
-    });
-
-    elTag.addEventListener("change", () => {
-      state.tag = elTag.value || "";
-      state.activeRaceId = null;
-      render();
-    });
-
-    elBtnAll.addEventListener("click", () => { state.group = "All"; state.activeRaceId = null; render(); });
-    elBtnAtoZ.addEventListener("click", () => { state.group = "A–Z"; state.activeRaceId = null; render(); });
-    elBtnClear.addEventListener("click", () => {
-      state.group = "All";
-      state.tag = "";
-      state.query = "";
-      state.activeRaceId = null;
-      elTag.value = "";
-      elQ.value = "";
-      render();
-    });
-
-    elBtnRandom.addEventListener("click", () => {
-      const arr = filteredRaces();
-      if (!arr.length) return;
-      const pick = arr[Math.floor(Math.random() * arr.length)];
-      state.activeRaceId = idOf(pick);
-      render();
-      renderDetail(pick);
-      toast("Random entry opened.");
-    });
-  }
-
-  async function start() {
-    wire();
-
-    try {
-      // Load per-file entries
-      const [races, classes] = await Promise.all([
-        loadEntries(PATHS.racesIndex, PATHS.racesDir),
-        loadEntries(PATHS.classesIndex, PATHS.classesDir),
-      ]);
-
-      // Normalize and ensure IDs
-      state.races = races.map(r => ({ ...r, id: r.id || idOf(r) }))
-                         .sort((a,b)=>nameOf(a).localeCompare(nameOf(b)));
-
-      state.classes = classes.map(c => ({ ...c, id: c.id || (c.name || c.class || "class") }))
-                             .sort((a,b)=>(String(a.name||a.class||a.id)).localeCompare(String(b.name||b.class||b.id)));
-
-      buildClassLens();
-      buildTagFilter();
-      render();
-      toast("Entries loaded.");
-
-    } catch (e) {
-      toast("Could not load entries indexes. Check entries/races/index.json and entries/classes/index.json");
-      state.races = [];
-      state.classes = [];
-      buildClassLens();
-      buildTagFilter();
-      render();
+  if(items.length === 0){
+    list.innerHTML = `<div class="muted small">No lore pages match.</div>`;
+  }else{
+    for(const p of items){
+      const el = document.createElement("div");
+      el.className = "listItem" + (p.id === ui.selectedLoreId ? " active" : "");
+      el.innerHTML = `<div class="listTitle">${escapeHtml(p.title || "Untitled")}</div>
+                      <div class="listMeta">${escapeHtml(p.section || "—")} • ${timeAgo(p.updatedAt)}</div>`;
+      el.onclick = () => {
+        ui.selectedLoreId = p.id;
+        ui.editingLore = false;
+        renderLore();
+      };
+      list.appendChild(el);
     }
   }
 
-  start();
+  const page = state.lore.find(x => x.id === ui.selectedLoreId);
+  if(!page){
+    $("#loreEmpty").classList.remove("hidden");
+    $("#loreView").classList.add("hidden");
+    $("#loreEditor").classList.add("hidden");
+    $("#loreCrumbs").textContent = "Lore";
+    return;
+  }
+
+  $("#loreCrumbs").textContent = `Lore / ${page.section || "—"} / ${page.title || "Untitled"}`;
+
+  if(ui.editingLore){
+    showLoreEditor(page);
+  }else{
+    showLoreView(page);
+  }
+}
+
+function populateLoreSectionFilter(){
+  const sel = $("#loreSectionFilter");
+  const cur = sel.value;
+  const sections = Array.from(new Set(state.lore.map(x => x.section).filter(Boolean))).sort();
+  sel.innerHTML = `<option value="">All sections</option>` + sections.map(s => `<option>${escapeHtml(s)}</option>`).join("");
+  // keep selection if possible
+  if(sections.includes(cur)) sel.value = cur;
+}
+
+function showLoreView(page){
+  $("#loreEmpty").classList.add("hidden");
+  $("#loreView").classList.remove("hidden");
+  $("#loreEditor").classList.add("hidden");
+
+  $("#loreTitle").textContent = page.title || "Untitled";
+  $("#loreSectionTag").textContent = page.section || "—";
+  $("#loreUpdated").textContent = `Updated ${timeAgo(page.updatedAt)}`;
+  $("#loreBody").innerHTML = renderMarkdown(page.body || "");
+
+  // handle wikilinks
+  $("#loreBody").querySelectorAll("a.wikilink").forEach(a=>{
+    a.addEventListener("click",(e)=>{
+      e.preventDefault();
+      const id = a.getAttribute("data-link");
+      if(id){
+        ui.selectedLoreId = id;
+        ui.editingLore = false;
+        renderLore();
+        setRecent("lore", id, state.lore.find(x=>x.id===id)?.title || "Lore");
+      }else{
+        const missing = a.getAttribute("data-link-missing");
+        toast(`No page found titled "${missing}". Create it with New Page.`);
+      }
+    });
+  });
+}
+
+function showLoreEditor(page){
+  $("#loreEmpty").classList.add("hidden");
+  $("#loreView").classList.add("hidden");
+  $("#loreEditor").classList.remove("hidden");
+
+  $("#loreTitleInput").value = page.title || "";
+  $("#loreSectionInput").value = page.section || "";
+  $("#loreBodyInput").value = page.body || "";
+
+  updateLorePreview();
+}
+
+function updateLorePreview(){
+  $("#lorePreview").innerHTML = renderMarkdown($("#loreBodyInput").value);
+}
+
+function newLorePage(seed={}){
+  const page = {
+    id: uid("lore"),
+    title: seed.title || "New Lore Page",
+    section: seed.section || "Unsorted",
+    body: seed.body || "Write here…\n",
+    updatedAt: now()
+  };
+  state.lore.unshift(page);
+  ui.selectedLoreId = page.id;
+  ui.editingLore = true;
+  saveAll();
+  setRecent("lore", page.id, page.title);
+  return page;
+}
+
+function saveLore(){
+  const page = state.lore.find(x => x.id === ui.selectedLoreId);
+  if(!page) return;
+
+  page.title = $("#loreTitleInput").value.trim() || "Untitled";
+  page.section = $("#loreSectionInput").value.trim() || "Unsorted";
+  page.body = $("#loreBodyInput").value;
+  page.updatedAt = now();
+
+  ui.editingLore = false;
+  saveAll();
+  setRecent("lore", page.id, page.title);
+  renderLore();
+}
+
+function deleteLore(){
+  const page = state.lore.find(x => x.id === ui.selectedLoreId);
+  if(!page) return;
+  if(!confirm(`Delete lore page "${page.title}"?`)) return;
+
+  state.lore = state.lore.filter(x => x.id !== page.id);
+  ui.selectedLoreId = state.lore[0]?.id || null;
+  ui.editingLore = false;
+  saveAll();
+  renderLore();
+}
+
+/* ---------- Races ---------- */
+
+function renderRaces(){
+  renderTop();
+  const filterText = $("#raceFilter").value.toLowerCase();
+  const list = $("#raceList");
+  list.innerHTML = "";
+
+  const items = state.races
+    .slice()
+    .sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0))
+    .filter(r => (r.name + " " + r.category + " " + r.vibe + " " + (r.traits||[]).join(",") + " " + r.body)
+      .toLowerCase().includes(filterText));
+
+  if(items.length === 0){
+    list.innerHTML = `<div class="muted small">No races match.</div>`;
+  }else{
+    for(const r of items){
+      const el = document.createElement("div");
+      el.className = "listItem" + (r.id === ui.selectedRaceId ? " active" : "");
+      el.innerHTML = `<div class="listTitle">${escapeHtml(r.name || "Unnamed")}</div>
+                      <div class="listMeta">${escapeHtml(r.category || "—")} • ${timeAgo(r.updatedAt)}</div>`;
+      el.onclick = () => {
+        ui.selectedRaceId = r.id;
+        ui.editingRace = false;
+        renderRaces();
+      };
+      list.appendChild(el);
+    }
+  }
+
+  const race = state.races.find(x => x.id === ui.selectedRaceId);
+  if(!race){
+    $("#raceEmpty").classList.remove("hidden");
+    $("#raceView").classList.add("hidden");
+    $("#raceEditor").classList.add("hidden");
+    $("#raceCrumbs").textContent = "Races";
+    return;
+  }
+
+  $("#raceCrumbs").textContent = `Races / ${race.name || "Unnamed"}`;
+
+  if(ui.editingRace){
+    showRaceEditor(race);
+  }else{
+    showRaceView(race);
+  }
+}
+
+function showRaceView(r){
+  $("#raceEmpty").classList.add("hidden");
+  $("#raceView").classList.remove("hidden");
+  $("#raceEditor").classList.add("hidden");
+
+  $("#raceName").textContent = r.name || "Unnamed";
+  $("#raceCategoryTag").textContent = r.category || "—";
+  $("#raceUpdated").textContent = `Updated ${timeAgo(r.updatedAt)}`;
+  $("#raceVibe").textContent = r.vibe || "—";
+  $("#raceTraits").textContent = (r.traits || []).join(", ") || "—";
+  $("#raceBody").innerHTML = renderMarkdown(r.body || "");
+}
+
+function showRaceEditor(r){
+  $("#raceEmpty").classList.add("hidden");
+  $("#raceView").classList.add("hidden");
+  $("#raceEditor").classList.remove("hidden");
+
+  $("#raceNameInput").value = r.name || "";
+  $("#raceCategoryInput").value = r.category || "";
+  $("#raceVibeInput").value = r.vibe || "";
+  $("#raceTraitsInput").value = (r.traits || []).join(", ");
+  $("#raceBodyInput").value = r.body || "";
+
+  updateRacePreview();
+}
+
+function updateRacePreview(){
+  $("#racePreview").innerHTML = renderMarkdown($("#raceBodyInput").value);
+}
+
+function newRace(seed={}){
+  const r = {
+    id: uid("race"),
+    name: seed.name || "New Race",
+    category: seed.category || "Unsorted",
+    vibe: seed.vibe || "",
+    traits: seed.traits || [],
+    body: seed.body || "Describe this race here…\n",
+    updatedAt: now()
+  };
+  state.races.unshift(r);
+  ui.selectedRaceId = r.id;
+  ui.editingRace = true;
+  saveAll();
+  setRecent("race", r.id, r.name);
+  return r;
+}
+
+function saveRace(){
+  const r = state.races.find(x => x.id === ui.selectedRaceId);
+  if(!r) return;
+
+  r.name = $("#raceNameInput").value.trim() || "Unnamed";
+  r.category = $("#raceCategoryInput").value.trim() || "Unsorted";
+  r.vibe = $("#raceVibeInput").value.trim();
+  r.traits = $("#raceTraitsInput").value.split(",").map(s=>s.trim()).filter(Boolean);
+  r.body = $("#raceBodyInput").value;
+  r.updatedAt = now();
+
+  ui.editingRace = false;
+  saveAll();
+  setRecent("race", r.id, r.name);
+  renderRaces();
+  renderCharacters(); // update race filters
+}
+
+function deleteRace(){
+  const r = state.races.find(x => x.id === ui.selectedRaceId);
+  if(!r) return;
+  if(!confirm(`Delete race "${r.name}"?`)) return;
+
+  state.races = state.races.filter(x => x.id !== r.id);
+  ui.selectedRaceId = state.races[0]?.id || null;
+  ui.editingRace = false;
+  saveAll();
+  renderRaces();
+  renderCharacters();
+}
+
+/* ---------- Characters ---------- */
+
+function renderCharacters(){
+  renderTop();
+  populateCharRaceFilter();
+
+  const filterText = $("#charFilter").value.toLowerCase();
+  const raceFilter = $("#charRaceFilter").value;
+
+  const list = $("#charList");
+  list.innerHTML = "";
+
+  const items = state.characters
+    .slice()
+    .sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0))
+    .filter(c => {
+      const okText = (c.name + " " + c.race + " " + c.role + " " + c.origin + " " + (c.keywords||[]).join(",") + " " + c.bio)
+        .toLowerCase().includes(filterText);
+      const okRace = !raceFilter || safeText(c.race).toLowerCase() === raceFilter.toLowerCase();
+      return okText && okRace;
+    });
+
+  if(items.length === 0){
+    list.innerHTML = `<div class="muted small">No characters match.</div>`;
+  }else{
+    for(const c of items){
+      const el = document.createElement("div");
+      el.className = "listItem" + (c.id === ui.selectedCharId ? " active" : "");
+      el.innerHTML = `<div class="listTitle">${escapeHtml(c.name || "Unnamed")}</div>
+                      <div class="listMeta">${escapeHtml(c.race || "—")} • ${escapeHtml(c.role || "—")}</div>`;
+      el.onclick = () => {
+        ui.selectedCharId = c.id;
+        ui.editingChar = false;
+        renderCharacters();
+      };
+      list.appendChild(el);
+    }
+  }
+
+  const c = state.characters.find(x => x.id === ui.selectedCharId);
+  if(!c){
+    $("#charEmpty").classList.remove("hidden");
+    $("#charView").classList.add("hidden");
+    $("#charEditor").classList.add("hidden");
+    $("#charCrumbs").textContent = "Characters";
+    return;
+  }
+
+  $("#charCrumbs").textContent = `Characters / ${c.name || "Unnamed"}`;
+
+  if(ui.editingChar){
+    showCharEditor(c);
+  }else{
+    showCharView(c);
+  }
+}
+
+function populateCharRaceFilter(){
+  const sel = $("#charRaceFilter");
+  const cur = sel.value;
+  const races = Array.from(new Set(state.characters.map(x=>x.race).filter(Boolean))).sort();
+  const knownRaces = Array.from(new Set(state.races.map(x=>x.name).filter(Boolean))).sort();
+  const all = Array.from(new Set([...knownRaces, ...races])).sort();
+
+  sel.innerHTML = `<option value="">All races</option>` + all.map(r => `<option>${escapeHtml(r)}</option>`).join("");
+  if(all.includes(cur)) sel.value = cur;
+}
+
+function showCharView(c){
+  $("#charEmpty").classList.add("hidden");
+  $("#charView").classList.remove("hidden");
+  $("#charEditor").classList.add("hidden");
+
+  $("#charAvatar").textContent = (c.name || " ").trim().slice(0,1).toUpperCase() || "✶";
+  $("#charName").textContent = c.name || "Unnamed";
+  $("#charRaceTag").textContent = c.race || "—";
+  $("#charRoleTag").textContent = c.role || "—";
+  $("#charUpdated").textContent = `Updated ${timeAgo(c.updatedAt)}`;
+
+  $("#charAge").textContent = c.age || "—";
+  $("#charOrigin").textContent = c.origin || "—";
+  $("#charKeywords").textContent = (c.keywords || []).join(", ") || "—";
+  $("#charBio").innerHTML = renderMarkdown(c.bio || "");
+
+  const relWrap = $("#charRels");
+  relWrap.innerHTML = "";
+  const rels = c.relationships || [];
+  if(rels.length === 0){
+    relWrap.innerHTML = `<div class="muted small">No relationships yet.</div>`;
+  }else{
+    for(const r of rels){
+      const div = document.createElement("div");
+      div.className = "rel";
+      div.innerHTML = `
+        <div class="relTop">
+          <div class="relName">${escapeHtml(r.name || "—")}</div>
+          <div class="relType">${escapeHtml(r.type || "")}</div>
+        </div>
+        <div class="muted">${escapeHtml(r.note || "")}</div>
+      `;
+      relWrap.appendChild(div);
+    }
+  }
+}
+
+function showCharEditor(c){
+  $("#charEmpty").classList.add("hidden");
+  $("#charView").classList.add("hidden");
+  $("#charEditor").classList.remove("hidden");
+
+  $("#charNameInput").value = c.name || "";
+  $("#charRaceInput").value = c.race || "";
+  $("#charRoleInput").value = c.role || "";
+  $("#charAgeInput").value = c.age || "";
+  $("#charOriginInput").value = c.origin || "";
+  $("#charKeywordsInput").value = (c.keywords || []).join(", ");
+  $("#charBioInput").value = c.bio || "";
+
+  const relLines = (c.relationships || []).map(r => `${r.name} — ${r.type} — ${r.note}`.trim());
+  $("#charRelsInput").value = relLines.join("\n");
+
+  updateCharPreview();
+}
+
+function updateCharPreview(){
+  $("#charPreview").innerHTML = renderMarkdown($("#charBioInput").value);
+}
+
+function parseRelationships(text){
+  const lines = safeText(text).split("\n").map(l=>l.trim()).filter(Boolean);
+  const rels = [];
+  for(const line of lines){
+    const parts = line.split("—").map(s=>s.trim());
+    const [name, type, note] = [parts[0]||"", parts[1]||"", parts.slice(2).join(" — ")||""];
+    rels.push({ name, type, note });
+  }
+  return rels;
+}
+
+function newCharacter(seed={}){
+  const c = {
+    id: uid("char"),
+    name: seed.name || "New Character",
+    race: seed.race || "",
+    role: seed.role || "",
+    age: seed.age || "",
+    origin: seed.origin || "",
+    keywords: seed.keywords || [],
+    bio: seed.bio || "Write their bio here…\n",
+    relationships: seed.relationships || [],
+    updatedAt: now()
+  };
+  state.characters.unshift(c);
+  ui.selectedCharId = c.id;
+  ui.editingChar = true;
+  saveAll();
+  setRecent("character", c.id, c.name);
+  return c;
+}
+
+function saveCharacter(){
+  const c = state.characters.find(x => x.id === ui.selectedCharId);
+  if(!c) return;
+
+  c.name = $("#charNameInput").value.trim() || "Unnamed";
+  c.race = $("#charRaceInput").value.trim();
+  c.role = $("#charRoleInput").value.trim();
+  c.age = $("#charAgeInput").value.trim();
+  c.origin = $("#charOriginInput").value.trim();
+  c.keywords = $("#charKeywordsInput").value.split(",").map(s=>s.trim()).filter(Boolean);
+  c.bio = $("#charBioInput").value;
+  c.relationships = parseRelationships($("#charRelsInput").value);
+  c.updatedAt = now();
+
+  ui.editingChar = false;
+  saveAll();
+  setRecent("character", c.id, c.name);
+  renderCharacters();
+}
+
+function deleteCharacter(){
+  const c = state.characters.find(x => x.id === ui.selectedCharId);
+  if(!c) return;
+  if(!confirm(`Delete character "${c.name}"?`)) return;
+
+  state.characters = state.characters.filter(x => x.id !== c.id);
+  ui.selectedCharId = state.characters[0]?.id || null;
+  ui.editingChar = false;
+  saveAll();
+  renderCharacters();
+}
+
+/* ---------- Search ---------- */
+
+function renderSearch(){
+  renderTop();
+  $("#searchInput").value = $("#globalSearch").value || "";
+  runSearch($("#searchInput").value);
+}
+
+function runSearch(q){
+  const query = safeText(q).trim().toLowerCase();
+  const out = $("#searchResults");
+  out.innerHTML = "";
+
+  if(!query){
+    out.innerHTML = `<div class="muted">Type something to search.</div>`;
+    return;
+  }
+
+  const results = [];
+
+  for(const p of state.lore){
+    if((p.title + " " + p.section + " " + p.body).toLowerCase().includes(query)){
+      results.push({
+        type: "Lore",
+        title: p.title || "Untitled",
+        id: p.id,
+        snippet: snippetFrom(p.body, query)
+      });
+    }
+  }
+
+  for(const r of state.races){
+    const hay = (r.name + " " + r.category + " " + r.vibe + " " + (r.traits||[]).join(",") + " " + r.body).toLowerCase();
+    if(hay.includes(query)){
+      results.push({
+        type: "Race",
+        title: r.name || "Unnamed",
+        id: r.id,
+        snippet: snippetFrom(r.body || r.vibe || "", query)
+      });
+    }
+  }
+
+  for(const c of state.characters){
+    const hay = (c.name + " " + c.race + " " + c.role + " " + c.origin + " " + (c.keywords||[]).join(",") + " " + c.bio).toLowerCase();
+    if(hay.includes(query)){
+      results.push({
+        type: "Character",
+        title: c.name || "Unnamed",
+        id: c.id,
+        snippet: snippetFrom(c.bio || "", query)
+      });
+    }
+  }
+
+  if(results.length === 0){
+    out.innerHTML = `<div class="muted">No results.</div>`;
+    return;
+  }
+
+  for(const r of results.slice(0, 100)){
+    const div = document.createElement("div");
+    div.className = "result";
+    div.innerHTML = `
+      <div class="resultTitle">${escapeHtml(r.title)}</div>
+      <div class="resultType">${escapeHtml(r.type)}</div>
+      <div class="resultSnippet">${escapeHtml(r.snippet)}</div>
+    `;
+    div.onclick = () => {
+      if(r.type === "Lore"){ ui.selectedLoreId = r.id; setView("lore"); }
+      if(r.type === "Race"){ ui.selectedRaceId = r.id; setView("races"); }
+      if(r.type === "Character"){ ui.selectedCharId = r.id; setView("characters"); }
+    };
+    out.appendChild(div);
+  }
+}
+
+function snippetFrom(text, query){
+  const t = safeText(text);
+  const idx = t.toLowerCase().indexOf(query);
+  if(idx === -1) return t.slice(0, 140) + (t.length > 140 ? "…" : "");
+  const start = Math.max(0, idx - 50);
+  const end = Math.min(t.length, idx + 90);
+  const snip = (start > 0 ? "…" : "") + t.slice(start, end) + (end < t.length ? "…" : "");
+  return snip.replace(/\s+/g, " ");
+}
+
+function timeAgo(ts){
+  if(!ts) return "—";
+  const s = Math.floor((now() - ts) / 1000);
+  if(s < 10) return "just now";
+  if(s < 60) return `${s}s ago`;
+  const m = Math.floor(s/60);
+  if(m < 60) return `${m}m ago`;
+  const h = Math.floor(m/60);
+  if(h < 48) return `${h}h ago`;
+  const d = Math.floor(h/24);
+  return `${d}d ago`;
+}
+
+/* ---------- Settings ---------- */
+
+function renderSettings(){
+  renderTop();
+  $("#worldTitleInput").value = state.world.title || "";
+  $("#worldTaglineInput").value = state.world.tagline || "";
+}
+
+function saveWorldSettings(){
+  state.world.title = $("#worldTitleInput").value.trim() || "Your World";
+  state.world.tagline = $("#worldTaglineInput").value.trim() || "";
+  saveAll();
+  renderTop();
+  toast("World settings saved.");
+}
+
+/* ---------- Import / Export ---------- */
+
+function exportJson(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${(state.world.title || "world").replace(/\s+/g,"_").toLowerCase()}_codex.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+function importJsonFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      state = data;
+      normalizeState();
+      stampAllIfZero();
+      saveAll();
+      toast("Imported.");
+      // reset selections
+      ui.selectedLoreId = state.lore[0]?.id || null;
+      ui.selectedRaceId = state.races[0]?.id || null;
+      ui.selectedCharId = state.characters[0]?.id || null;
+      renderTop();
+      setView("home");
+    }catch(e){
+      alert("Import failed: invalid JSON.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- Tiny toast ---------- */
+
+let toastTimer = null;
+function toast(msg){
+  let el = $("#toast");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "toast";
+    el.style.position = "fixed";
+    el.style.left = "50%";
+    el.style.bottom = "16px";
+    el.style.transform = "translateX(-50%)";
+    el.style.padding = "10px 12px";
+    el.style.borderRadius = "14px";
+    el.style.border = "1px solid rgba(255,255,255,.12)";
+    el.style.background = "rgba(0,0,0,.55)";
+    el.style.backdropFilter = "blur(10px)";
+    el.style.color = "white";
+    el.style.zIndex = "9999";
+    el.style.boxShadow = "0 10px 30px rgba(0,0,0,.35)";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = "1";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.opacity = "0"; }, 1400);
+}
+
+/* ---------- Wire up events ---------- */
+
+function bindEvents(){
+  // nav
+  $$(".navItem").forEach(b => b.addEventListener("click", ()=> setView(b.dataset.view)));
+
+  // home buttons
+  $("#goLore").onclick = () => setView("lore");
+  $("#goCharacters").onclick = () => setView("characters");
+  $("#btnClearRecent").onclick = clearRecent;
+
+  // global search
+  $("#globalSearch").addEventListener("input", (e)=>{
+    if(ui.currentView === "search") runSearch(e.target.value);
+  });
+
+  // Ctrl / focus search
+  window.addEventListener("keydown", (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key === "/"){
+      e.preventDefault();
+      $("#globalSearch").focus();
+    }
+  });
+
+  // Save, Import, Export
+  $("#btnSaveAll").onclick = saveAll;
+  $("#btnExport").onclick = exportJson;
+  $("#btnImport").onclick = () => $("#filePicker").click();
+  $("#filePicker").addEventListener("change", (e)=>{
+    const f = e.target.files?.[0];
+    if(f) importJsonFile(f);
+    e.target.value = "";
+  });
+
+  // lore events
+  $("#btnNewLore").onclick = () => { newLorePage(); renderLore(); };
+  $("#loreFilter").addEventListener("input", renderLore);
+  $("#loreSectionFilter").addEventListener("change", renderLore);
+  $("#btnLoreEdit").onclick = () => { ui.editingLore = true; renderLore(); };
+  $("#btnLoreCancel").onclick = () => { ui.editingLore = false; renderLore(); };
+  $("#btnLoreSave").onclick = saveLore;
+  $("#btnLoreDelete").onclick = deleteLore;
+  $("#loreBodyInput").addEventListener("input", updateLorePreview);
+
+  // races events
+  $("#btnNewRace").onclick = () => { newRace(); renderRaces(); };
+  $("#raceFilter").addEventListener("input", renderRaces);
+  $("#btnRaceEdit").onclick = () => { ui.editingRace = true; renderRaces(); };
+  $("#btnRaceCancel").onclick = () => { ui.editingRace = false; renderRaces(); };
+  $("#btnRaceSave").onclick = saveRace;
+  $("#btnRaceDelete").onclick = deleteRace;
+  $("#raceBodyInput").addEventListener("input", updateRacePreview);
+
+  // chars events
+  $("#btnNewChar").onclick = () => { newCharacter(); renderCharacters(); };
+  $("#charFilter").addEventListener("input", renderCharacters);
+  $("#charRaceFilter").addEventListener("change", renderCharacters);
+  $("#btnCharEdit").onclick = () => { ui.editingChar = true; renderCharacters(); };
+  $("#btnCharCancel").onclick = () => { ui.editingChar = false; renderCharacters(); };
+  $("#btnCharSave").onclick = saveCharacter;
+  $("#btnCharDelete").onclick = deleteCharacter;
+  $("#charBioInput").addEventListener("input", updateCharPreview);
+
+  // search view
+  $("#searchInput").addEventListener("input", (e)=> runSearch(e.target.value));
+
+  // settings
+  $("#btnSaveWorld").onclick = saveWorldSettings;
+  $("#btnReset").onclick = async () => {
+    if(!confirm("Reset to defaults from data/world.json? This will overwrite local edits.")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    await loadInitial();
+    toast("Reset complete.");
+    ui.selectedLoreId = state.lore[0]?.id || null;
+    ui.selectedRaceId = state.races[0]?.id || null;
+    ui.selectedCharId = state.characters[0]?.id || null;
+    setView("home");
+  };
+  $("#btnWipe").onclick = () => {
+    if(!confirm("Wipe ALL local data? This cannot be undone (unless you exported).")) return;
+    wipeLocal();
+  };
+}
+
+/* ---------- Boot ---------- */
+
+(async function main(){
+  await loadInitial();
+
+  // default selections
+  ui.selectedLoreId = state.lore[0]?.id || null;
+  ui.selectedRaceId = state.races[0]?.id || null;
+  ui.selectedCharId = state.characters[0]?.id || null;
+
+  bindEvents();
+  renderTop();
+  renderHome();
+
+  // quick jumps
+  $("#globalSearch").addEventListener("keydown",(e)=>{
+    if(e.key === "Enter"){
+      setView("search");
+      $("#searchInput").focus();
+      runSearch($("#globalSearch").value);
+    }
+  });
+
 })();

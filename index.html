@@ -1,87 +1,474 @@
-<!-- index.html -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>The Crimson Key — Bestiary</title>
+  <title>The Crimson Key - Codex</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="bg"></div>
-
   <header class="topbar">
     <div class="brand">
-      <div class="seal" aria-hidden="true"></div>
-      <div class="titles">
-        <div class="game">The Crimson Key</div>
-        <div class="page">Bestiary & Races</div>
+      <div class="sigil" aria-hidden="true">✦</div>
+      <div>
+        <div class="title">Purple Codex</div>
+        <div class="subtitle" id="worldSubtitle">World Bible • Lore • Races • Characters</div>
       </div>
     </div>
 
-    <div class="top-controls">
-      <div class="search">
-        <span class="search-icon" aria-hidden="true">⌕</span>
-        <input id="q" type="search" placeholder="Search races, traits, notes…" autocomplete="off" />
+    <div class="topbar-actions">
+      <div class="searchWrap">
+        <input id="globalSearch" class="search" type="search" placeholder="Search lore, races, characters…" />
+        <div class="kbd">Ctrl /</div>
       </div>
 
-      <select id="classLens" class="select" title="Class subtitle lens">
-        <option value="">Class Lens: None</option>
-      </select>
-
-      <select id="tagFilter" class="select" title="Filter by tag">
-        <option value="">Filter: All tags</option>
-      </select>
-
-      <button id="btnRandom" class="btn" type="button">Random</button>
+      <button class="btn ghost" id="btnImport">Import</button>
+      <button class="btn ghost" id="btnExport">Export</button>
+      <button class="btn" id="btnSaveAll">Save</button>
     </div>
   </header>
 
-  <main class="layout">
-    <aside class="shelf" aria-label="Bestiary Shelf">
-      <div class="shelf-head">
-        <div class="shelf-title">Sections</div>
-        <div class="shelf-sub">Races</div>
+  <div class="layout">
+    <aside class="sidebar">
+      <nav class="nav">
+        <button class="navItem active" data-view="home">
+          <span class="navIcon">⌂</span> Home
+        </button>
+        <button class="navItem" data-view="lore">
+          <span class="navIcon">✎</span> Lore
+        </button>
+        <button class="navItem" data-view="races">
+          <span class="navIcon">⚑</span> Races
+        </button>
+        <button class="navItem" data-view="characters">
+          <span class="navIcon">☽</span> Characters
+        </button>
+        <button class="navItem" data-view="search">
+          <span class="navIcon">⌕</span> Search
+        </button>
+        <button class="navItem" data-view="settings">
+          <span class="navIcon">⚙</span> Settings
+        </button>
+      </nav>
+
+      <div class="sideCard">
+        <div class="sideCardTitle">Quick Tips</div>
+        <ul class="tips">
+          <li>Click any entry to view it.</li>
+          <li>Use <b>Edit</b> to change text.</li>
+          <li>Everything saves to your browser (offline).</li>
+          <li>Use Export for backups or sharing.</li>
+        </ul>
       </div>
 
-      <nav class="groups" id="groups"></nav>
-
-      <div class="shelf-foot">
-        <button id="btnAll" class="pill" type="button">All</button>
-        <button id="btnAtoZ" class="pill" type="button">A–Z</button>
-        <button id="btnClear" class="pill" type="button">Clear</button>
+      <div class="sideFooter">
+        <div class="muted">Local-first • No server required</div>
       </div>
     </aside>
 
-    <section class="book" aria-label="Bestiary Pages">
-      <div class="paper left">
-        <div class="paper-inner">
-          <div class="list-head">
-            <div class="list-title">Index</div>
-            <div class="list-meta" id="resultsMeta">—</div>
+    <main class="content">
+      <!-- HOME -->
+      <section class="view active" id="view-home">
+        <div class="hero">
+          <div>
+            <h1 id="worldTitle">Your World</h1>
+            <p id="worldTagline" class="lead">
+              A living codex for lore, races, characters, and timelines.
+            </p>
+            <div class="heroButtons">
+              <button class="btn" id="goLore">Write Lore</button>
+              <button class="btn ghost" id="goCharacters">Add Characters</button>
+            </div>
           </div>
 
-          <div class="cards" id="cards"></div>
-        </div>
-        <div class="page-num" id="pageNumLeft">I</div>
-      </div>
+          <div class="heroPanel">
+            <div class="statGrid">
+              <div class="stat">
+                <div class="statLabel">Lore Pages</div>
+                <div class="statValue" id="statLore">0</div>
+              </div>
+              <div class="stat">
+                <div class="statLabel">Races</div>
+                <div class="statValue" id="statRaces">0</div>
+              </div>
+              <div class="stat">
+                <div class="statLabel">Characters</div>
+                <div class="statValue" id="statChars">0</div>
+              </div>
+            </div>
 
-      <div class="spine" aria-hidden="true"></div>
+            <div class="divider"></div>
 
-      <div class="paper right">
-        <div class="paper-inner" id="detail">
-          <div class="empty">
-            <div class="empty-title">Open an entry</div>
-            <div class="empty-text">Select a race on the left to view its bestiary page.</div>
+            <div class="recent">
+              <div class="row">
+                <div class="sideCardTitle">Recently Edited</div>
+                <button class="btn tiny ghost" id="btnClearRecent">Clear</button>
+              </div>
+              <div id="recentList" class="recentList"></div>
+            </div>
           </div>
         </div>
-        <div class="page-num" id="pageNumRight">II</div>
-      </div>
-    </section>
-  </main>
 
-  <div class="toast" id="toast" aria-live="polite"></div>
+        <div class="grid2">
+          <div class="card">
+            <div class="cardHeader">
+              <h2>Start with structure</h2>
+              <div class="muted">Suggested lore sections</div>
+            </div>
+            <div class="cardBody">
+              <div class="chips" id="starterChips"></div>
+              <div class="muted small">Click a chip to add a new lore page.</div>
+            </div>
+          </div>
 
+          <div class="card">
+            <div class="cardHeader">
+              <h2>World rules</h2>
+              <div class="muted">Magic, tech, factions, laws</div>
+            </div>
+            <div class="cardBody">
+              <p class="muted">
+                This codex is designed like a “world bible” — clean pages, rich entries, quick linking,
+                and easy export for backups.
+              </p>
+              <div class="callout">
+                Tip: use <code>[[Page Name]]</code> inside lore text to create links.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LORE -->
+      <section class="view" id="view-lore">
+        <div class="split">
+          <div class="pane listPane">
+            <div class="paneHeader">
+              <div>
+                <h2>Lore</h2>
+                <div class="muted">Pages & sections</div>
+              </div>
+              <button class="btn" id="btnNewLore">New Page</button>
+            </div>
+
+            <div class="filters">
+              <input id="loreFilter" class="input" placeholder="Filter lore pages…" />
+              <select id="loreSectionFilter" class="select">
+                <option value="">All sections</option>
+              </select>
+            </div>
+
+            <div id="loreList" class="list"></div>
+          </div>
+
+          <div class="pane detailPane">
+            <div class="paneHeader">
+              <div class="crumbs" id="loreCrumbs"></div>
+              <div class="actions">
+                <button class="btn ghost" id="btnLoreEdit">Edit</button>
+                <button class="btn ghost" id="btnLoreDelete">Delete</button>
+              </div>
+            </div>
+
+            <div class="detail">
+              <div id="loreEmpty" class="empty">
+                Select a lore page on the left — or create a new one.
+              </div>
+
+              <div id="loreView" class="doc hidden">
+                <h2 id="loreTitle"></h2>
+                <div class="meta">
+                  <span id="loreSectionTag" class="tag"></span>
+                  <span class="muted" id="loreUpdated"></span>
+                </div>
+                <div id="loreBody" class="markdown"></div>
+              </div>
+
+              <div id="loreEditor" class="editor hidden">
+                <div class="editorRow">
+                  <label class="label">Title</label>
+                  <input id="loreTitleInput" class="input" />
+                </div>
+                <div class="editorRow">
+                  <label class="label">Section</label>
+                  <input id="loreSectionInput" class="input" placeholder="e.g., History, Magic, Locations" />
+                </div>
+                <div class="editorRow">
+                  <label class="label">Content (supports basic markdown + [[Links]])</label>
+                  <textarea id="loreBodyInput" class="textarea" rows="14"></textarea>
+                </div>
+                <div class="editorActions">
+                  <button class="btn" id="btnLoreSave">Save</button>
+                  <button class="btn ghost" id="btnLoreCancel">Cancel</button>
+                </div>
+
+                <div class="divider"></div>
+                <div class="muted small">Preview</div>
+                <div id="lorePreview" class="markdown preview"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RACES -->
+      <section class="view" id="view-races">
+        <div class="split">
+          <div class="pane listPane">
+            <div class="paneHeader">
+              <div>
+                <h2>Races</h2>
+                <div class="muted">Species, lineages, peoples</div>
+              </div>
+              <button class="btn" id="btnNewRace">New Race</button>
+            </div>
+
+            <div class="filters">
+              <input id="raceFilter" class="input" placeholder="Filter races…" />
+            </div>
+
+            <div id="raceList" class="list"></div>
+          </div>
+
+          <div class="pane detailPane">
+            <div class="paneHeader">
+              <div class="crumbs" id="raceCrumbs"></div>
+              <div class="actions">
+                <button class="btn ghost" id="btnRaceEdit">Edit</button>
+                <button class="btn ghost" id="btnRaceDelete">Delete</button>
+              </div>
+            </div>
+
+            <div class="detail">
+              <div id="raceEmpty" class="empty">
+                Select a race — or create a new one.
+              </div>
+
+              <div id="raceView" class="doc hidden">
+                <h2 id="raceName"></h2>
+                <div class="meta">
+                  <span id="raceCategoryTag" class="tag"></span>
+                  <span class="muted" id="raceUpdated"></span>
+                </div>
+                <div class="kv">
+                  <div><div class="k">Vibe</div><div class="v" id="raceVibe"></div></div>
+                  <div><div class="k">Traits</div><div class="v" id="raceTraits"></div></div>
+                </div>
+                <div id="raceBody" class="markdown"></div>
+              </div>
+
+              <div id="raceEditor" class="editor hidden">
+                <div class="editorRow">
+                  <label class="label">Name</label>
+                  <input id="raceNameInput" class="input" />
+                </div>
+                <div class="editorRow">
+                  <label class="label">Category</label>
+                  <input id="raceCategoryInput" class="input" placeholder="e.g., Celestial, Mortal, Abyssal" />
+                </div>
+                <div class="editorRow">
+                  <label class="label">Vibe (one-liner)</label>
+                  <input id="raceVibeInput" class="input" placeholder="Short feel / theme" />
+                </div>
+                <div class="editorRow">
+                  <label class="label">Traits (comma separated)</label>
+                  <input id="raceTraitsInput" class="input" placeholder="e.g., luminous skin, calm aura, astral magic" />
+                </div>
+                <div class="editorRow">
+                  <label class="label">Description</label>
+                  <textarea id="raceBodyInput" class="textarea" rows="12"></textarea>
+                </div>
+                <div class="editorActions">
+                  <button class="btn" id="btnRaceSave">Save</button>
+                  <button class="btn ghost" id="btnRaceCancel">Cancel</button>
+                </div>
+
+                <div class="divider"></div>
+                <div class="muted small">Preview</div>
+                <div id="racePreview" class="markdown preview"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CHARACTERS -->
+      <section class="view" id="view-characters">
+        <div class="split">
+          <div class="pane listPane">
+            <div class="paneHeader">
+              <div>
+                <h2>Characters</h2>
+                <div class="muted">Profiles, relationships, roles</div>
+              </div>
+              <button class="btn" id="btnNewChar">New Character</button>
+            </div>
+
+            <div class="filters">
+              <input id="charFilter" class="input" placeholder="Filter characters…" />
+              <select id="charRaceFilter" class="select">
+                <option value="">All races</option>
+              </select>
+            </div>
+
+            <div id="charList" class="list"></div>
+          </div>
+
+          <div class="pane detailPane">
+            <div class="paneHeader">
+              <div class="crumbs" id="charCrumbs"></div>
+              <div class="actions">
+                <button class="btn ghost" id="btnCharEdit">Edit</button>
+                <button class="btn ghost" id="btnCharDelete">Delete</button>
+              </div>
+            </div>
+
+            <div class="detail">
+              <div id="charEmpty" class="empty">
+                Select a character — or create a new one.
+              </div>
+
+              <div id="charView" class="doc hidden">
+                <div class="profileTop">
+                  <div class="avatar" id="charAvatar" aria-hidden="true">✶</div>
+                  <div>
+                    <h2 id="charName"></h2>
+                    <div class="meta">
+                      <span id="charRaceTag" class="tag"></span>
+                      <span id="charRoleTag" class="tag subtle"></span>
+                      <span class="muted" id="charUpdated"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="kv">
+                  <div><div class="k">Age</div><div class="v" id="charAge"></div></div>
+                  <div><div class="k">Origin</div><div class="v" id="charOrigin"></div></div>
+                  <div><div class="k">Keywords</div><div class="v" id="charKeywords"></div></div>
+                </div>
+
+                <div class="divider"></div>
+                <div class="sideCardTitle">Bio</div>
+                <div id="charBio" class="markdown"></div>
+
+                <div class="divider"></div>
+                <div class="sideCardTitle">Relationships</div>
+                <div id="charRels" class="rels"></div>
+              </div>
+
+              <div id="charEditor" class="editor hidden">
+                <div class="editorGrid">
+                  <div class="editorRow">
+                    <label class="label">Name</label>
+                    <input id="charNameInput" class="input" />
+                  </div>
+                  <div class="editorRow">
+                    <label class="label">Race</label>
+                    <input id="charRaceInput" class="input" placeholder="e.g., Vespera, Aurestra" />
+                  </div>
+                  <div class="editorRow">
+                    <label class="label">Role / Title</label>
+                    <input id="charRoleInput" class="input" placeholder="e.g., Oracle of Dusk" />
+                  </div>
+                  <div class="editorRow">
+                    <label class="label">Age</label>
+                    <input id="charAgeInput" class="input" placeholder="e.g., 19 / ageless" />
+                  </div>
+                  <div class="editorRow">
+                    <label class="label">Origin</label>
+                    <input id="charOriginInput" class="input" placeholder="e.g., Moonlit Courts of ____" />
+                  </div>
+                  <div class="editorRow">
+                    <label class="label">Keywords (comma separated)</label>
+                    <input id="charKeywordsInput" class="input" placeholder="calm, radiant, secretive" />
+                  </div>
+                </div>
+
+                <div class="editorRow">
+                  <label class="label">Bio</label>
+                  <textarea id="charBioInput" class="textarea" rows="10"></textarea>
+                </div>
+
+                <div class="editorRow">
+                  <label class="label">Relationships (one per line: Name — type — note)</label>
+                  <textarea id="charRelsInput" class="textarea" rows="6" placeholder="Violethyn Emmara Kinsyl — ally — trusts her with the Codex"></textarea>
+                </div>
+
+                <div class="editorActions">
+                  <button class="btn" id="btnCharSave">Save</button>
+                  <button class="btn ghost" id="btnCharCancel">Cancel</button>
+                </div>
+
+                <div class="divider"></div>
+                <div class="muted small">Preview</div>
+                <div id="charPreview" class="markdown preview"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEARCH -->
+      <section class="view" id="view-search">
+        <div class="card">
+          <div class="cardHeader">
+            <h2>Search</h2>
+            <div class="muted">Find anything in your codex</div>
+          </div>
+          <div class="cardBody">
+            <input id="searchInput" class="input" placeholder="Type to search…" />
+            <div class="divider"></div>
+            <div id="searchResults" class="searchResults"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="view-settings">
+        <div class="grid2">
+          <div class="card">
+            <div class="cardHeader">
+              <h2>World Settings</h2>
+              <div class="muted">Title + tagline</div>
+            </div>
+            <div class="cardBody">
+              <div class="editorRow">
+                <label class="label">World Title</label>
+                <input id="worldTitleInput" class="input" />
+              </div>
+              <div class="editorRow">
+                <label class="label">Tagline</label>
+                <input id="worldTaglineInput" class="input" />
+              </div>
+              <button class="btn" id="btnSaveWorld">Save World Settings</button>
+              <div class="muted small">Saved locally. Export for backups.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHeader">
+              <h2>Data</h2>
+              <div class="muted">Backup / reset</div>
+            </div>
+            <div class="cardBody">
+              <div class="callout">
+                Export creates a single <code>.json</code> file with everything (lore, races, characters).
+              </div>
+              <div class="row gap">
+                <button class="btn ghost" id="btnReset">Reset to Defaults</button>
+                <button class="btn danger" id="btnWipe">Wipe Local Data</button>
+              </div>
+              <div class="muted small">
+                Reset loads the default <code>data/world.json</code>. Wipe clears browser storage.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <input id="filePicker" type="file" accept="application/json" hidden />
   <script src="script.js"></script>
 </body>
 </html>
