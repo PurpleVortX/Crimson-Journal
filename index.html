@@ -1,474 +1,693 @@
+<!-- index.html -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>The Crimson Key - Codex</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>The Crimson Key — Guide</title>
+  <style>
+    :root{
+      --paper:#efe3c8;
+      --paper2:#e7d8b7;
+      --ink:#2a1f14;
+      --ink2:#5a4631;
+      --shadow: rgba(0,0,0,.22);
+      --edge:#cbb68f;
+      --accent:#7a2cff;
+      --accent2:#b08cff;
+      --good:#2d7a3a;
+      --bad:#8a2f2f;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    html,body{height:100%; background:#2b241b; margin:0; color:var(--ink);}
+    *{box-sizing:border-box;}
+
+    /* desk */
+    body{
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      padding:18px;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(255,255,255,.06), transparent 55%),
+        radial-gradient(900px 600px at 80% 90%, rgba(255,255,255,.04), transparent 55%),
+        linear-gradient(120deg, #221c15, #2b241b 35%, #1e1913);
+      font-family:var(--sans);
+    }
+
+    .app{
+      width:min(1280px, 100%);
+      height:100%;
+      display:grid;
+      grid-template-columns: 340px 1fr;
+      gap:14px;
+    }
+
+    .panel{
+      position:relative;
+      border-radius:18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(0,0,0,.05));
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      padding:14px;
+      overflow:hidden;
+    }
+
+    .panel::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(900px 420px at 10% 20%, rgba(255,255,255,.10), transparent 55%),
+        radial-gradient(900px 420px at 90% 80%, rgba(255,255,255,.06), transparent 55%);
+      pointer-events:none;
+    }
+
+    /* notebook */
+    .book{
+      position:relative;
+      height:100%;
+      border-radius:18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.12)),
+        linear-gradient(90deg, rgba(0,0,0,.18), transparent 30%, transparent 70%, rgba(0,0,0,.18));
+      padding:18px;
+      overflow:hidden;
+    }
+
+    .book::after{
+      content:"";
+      position:absolute; inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(900px 500px at 20% 10%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(900px 500px at 80% 90%, rgba(0,0,0,.12), transparent 60%),
+        repeating-linear-gradient(0deg, rgba(90,70,49,.06) 0 1px, transparent 1px 28px);
+      mix-blend-mode:overlay;
+      opacity:.55;
+    }
+
+    .spread{
+      position:relative;
+      height:100%;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:0;
+      border-radius:14px;
+      overflow:hidden;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+      background: linear-gradient(90deg, var(--paper), var(--paper2));
+    }
+
+    .page{
+      position:relative;
+      padding:18px 18px 16px;
+      overflow:auto;
+      background:
+        radial-gradient(900px 500px at 15% 15%, rgba(255,255,255,.30), transparent 60%),
+        radial-gradient(900px 500px at 85% 85%, rgba(0,0,0,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.05));
+    }
+
+    .page.left{ border-right: 2px solid rgba(0,0,0,.12); }
+    .page.right{ }
+
+    .spine{
+      position:absolute;
+      left:50%; top:0; bottom:0;
+      width:26px;
+      transform:translateX(-50%);
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.22), rgba(255,255,255,.06), rgba(0,0,0,.22));
+      pointer-events:none;
+      opacity:.7;
+    }
+
+    /* Header */
+    .brand{
+      position:relative;
+      z-index:1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px 12px;
+      border-radius:14px;
+      background: rgba(0,0,0,.18);
+      color:#f4ead7;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+      margin-bottom:12px;
+    }
+    .brand h1{
+      margin:0;
+      font-family:var(--serif);
+      font-size:18px;
+      letter-spacing:.4px;
+    }
+    .brand .hint{
+      font-family:var(--mono);
+      font-size:12px;
+      opacity:.85;
+      white-space:nowrap;
+    }
+
+    /* Sidebar list */
+    .list{
+      position:relative;
+      z-index:1;
+      background: rgba(255,255,255,.06);
+      border-radius:14px;
+      padding:10px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.05);
+      overflow:auto;
+      height: calc(100% - 62px);
+    }
+
+    .entry-btn{
+      width:100%;
+      text-align:left;
+      border:0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.18), rgba(0,0,0,.08));
+      color:#f4ead7;
+      padding:10px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      margin:0 0 8px 0;
+      box-shadow: 0 6px 16px rgba(0,0,0,.22);
+      position:relative;
+      overflow:hidden;
+    }
+    .entry-btn::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(500px 220px at 20% 10%, rgba(255,255,255,.18), transparent 55%),
+        radial-gradient(500px 220px at 80% 90%, rgba(0,0,0,.20), transparent 55%);
+      opacity:.9;
+    }
+    .entry-btn > *{ position:relative; z-index:1; }
+    .entry-btn .title{
+      font-weight:700;
+      letter-spacing:.2px;
+      font-size:14px;
+      line-height:1.2;
+    }
+    .entry-btn .meta{
+      margin-top:4px;
+      font-family:var(--mono);
+      font-size:11px;
+      opacity:.9;
+    }
+    .entry-btn.active{
+      outline: 2px solid rgba(176,140,255,.45);
+      box-shadow: 0 10px 28px rgba(122,44,255,.25);
+    }
+
+    /* Page content */
+    .p-title{
+      font-family:var(--serif);
+      margin:0;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    .p-sub{
+      margin:6px 0 10px;
+      color:var(--ink2);
+      font-family:var(--mono);
+      font-size:12px;
+    }
+
+    .tagrow{
+      display:flex; flex-wrap:wrap; gap:6px;
+      margin:8px 0 12px;
+    }
+    .tag{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:4px 8px;
+      border-radius:999px;
+      background: rgba(0,0,0,.10);
+      border: 1px solid rgba(0,0,0,.12);
+      color: var(--ink);
+    }
+
+    .img-wrap{
+      position:relative;
+      width:100%;
+      display:flex;
+      justify-content:center;
+      margin:10px 0 12px;
+    }
+    .photo{
+      max-width:100%;
+      max-height:420px;
+      border-radius:10px;
+      box-shadow: 0 12px 30px var(--shadow);
+      border: 1px solid rgba(0,0,0,.18);
+      background:#fff;
+    }
+    /* "taped" corners */
+    .tape{
+      position:absolute;
+      width:86px; height:34px;
+      background: rgba(255,255,255,.42);
+      border:1px solid rgba(0,0,0,.10);
+      box-shadow: 0 6px 14px rgba(0,0,0,.18);
+      transform: rotate(-10deg);
+      top:-10px; left:16px;
+      border-radius:8px;
+      backdrop-filter: blur(1px);
+    }
+    .tape.t2{
+      transform: rotate(9deg);
+      top:-8px; right:18px; left:auto;
+      width:78px;
+    }
+
+    .desc{
+      font-family:var(--serif);
+      font-size:15px;
+      line-height:1.55;
+      white-space:pre-wrap;
+    }
+
+    .stats{
+      margin-top:10px;
+      border-radius:12px;
+      padding:10px;
+      background: rgba(0,0,0,.06);
+      border:1px solid rgba(0,0,0,.12);
+    }
+    .stats h3{
+      margin:0 0 8px;
+      font-family:var(--mono);
+      font-size:12px;
+      letter-spacing:.3px;
+      color:var(--ink2);
+      text-transform:uppercase;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:8px;
+    }
+    .stat{
+      border-radius:10px;
+      padding:8px;
+      background: rgba(255,255,255,.28);
+      border:1px solid rgba(0,0,0,.10);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .stat .k{
+      font-family:var(--mono);
+      font-size:11px;
+      color:var(--ink2);
+      text-transform:uppercase;
+    }
+    .stat .v{
+      font-family:var(--serif);
+      font-size:18px;
+      font-weight:700;
+      margin-top:2px;
+    }
+
+    .nav{
+      position:absolute;
+      inset:auto 12px 12px 12px;
+      display:flex;
+      gap:10px;
+      justify-content:space-between;
+      z-index:2;
+      pointer-events:none;
+    }
+    .nav button{
+      pointer-events:auto;
+      border:0;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(0,0,0,.10);
+      border:1px solid rgba(0,0,0,.16);
+      color:var(--ink);
+      font-family:var(--mono);
+      font-size:12px;
+    }
+    .nav button:hover{ background: rgba(0,0,0,.14); }
+
+    .status{
+      font-family:var(--mono);
+      font-size:12px;
+      color:#f4ead7;
+      opacity:.92;
+      margin:8px 0 0;
+      white-space:pre-wrap;
+    }
+
+    @media (max-width: 980px){
+      .app{ grid-template-columns: 1fr; grid-template-rows: 300px 1fr; }
+      .list{ height:auto; max-height: 220px; }
+      .spread{ grid-template-columns: 1fr; }
+      .page.left{ border-right:0; border-bottom: 2px solid rgba(0,0,0,.12); }
+      .spine{ display:none; }
+      .nav{ position:static; margin-top:10px; pointer-events:auto; }
+    }
+  </style>
 </head>
+
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="sigil" aria-hidden="true">✦</div>
-      <div>
-        <div class="title">Purple Codex</div>
-        <div class="subtitle" id="worldSubtitle">World Bible • Lore • Races • Characters</div>
+  <div class="app">
+    <div class="panel">
+      <div class="brand">
+        <h1>The Crimson Key — Entries</h1>
+        <div class="hint">/entries/*.json</div>
       </div>
+      <div id="list" class="list"></div>
+      <div id="status" class="status"></div>
     </div>
 
-    <div class="topbar-actions">
-      <div class="searchWrap">
-        <input id="globalSearch" class="search" type="search" placeholder="Search lore, races, characters…" />
-        <div class="kbd">Ctrl /</div>
+    <div class="panel book">
+      <div class="spread">
+        <div class="page left" id="pageLeft"></div>
+        <div class="spine"></div>
+        <div class="page right" id="pageRight"></div>
       </div>
 
-      <button class="btn ghost" id="btnImport">Import</button>
-      <button class="btn ghost" id="btnExport">Export</button>
-      <button class="btn" id="btnSaveAll">Save</button>
+      <div class="nav">
+        <button id="prevBtn" type="button">⟵ Prev</button>
+        <button id="nextBtn" type="button">Next ⟶</button>
+      </div>
     </div>
-  </header>
-
-  <div class="layout">
-    <aside class="sidebar">
-      <nav class="nav">
-        <button class="navItem active" data-view="home">
-          <span class="navIcon">⌂</span> Home
-        </button>
-        <button class="navItem" data-view="lore">
-          <span class="navIcon">✎</span> Lore
-        </button>
-        <button class="navItem" data-view="races">
-          <span class="navIcon">⚑</span> Races
-        </button>
-        <button class="navItem" data-view="characters">
-          <span class="navIcon">☽</span> Characters
-        </button>
-        <button class="navItem" data-view="search">
-          <span class="navIcon">⌕</span> Search
-        </button>
-        <button class="navItem" data-view="settings">
-          <span class="navIcon">⚙</span> Settings
-        </button>
-      </nav>
-
-      <div class="sideCard">
-        <div class="sideCardTitle">Quick Tips</div>
-        <ul class="tips">
-          <li>Click any entry to view it.</li>
-          <li>Use <b>Edit</b> to change text.</li>
-          <li>Everything saves to your browser (offline).</li>
-          <li>Use Export for backups or sharing.</li>
-        </ul>
-      </div>
-
-      <div class="sideFooter">
-        <div class="muted">Local-first • No server required</div>
-      </div>
-    </aside>
-
-    <main class="content">
-      <!-- HOME -->
-      <section class="view active" id="view-home">
-        <div class="hero">
-          <div>
-            <h1 id="worldTitle">Your World</h1>
-            <p id="worldTagline" class="lead">
-              A living codex for lore, races, characters, and timelines.
-            </p>
-            <div class="heroButtons">
-              <button class="btn" id="goLore">Write Lore</button>
-              <button class="btn ghost" id="goCharacters">Add Characters</button>
-            </div>
-          </div>
-
-          <div class="heroPanel">
-            <div class="statGrid">
-              <div class="stat">
-                <div class="statLabel">Lore Pages</div>
-                <div class="statValue" id="statLore">0</div>
-              </div>
-              <div class="stat">
-                <div class="statLabel">Races</div>
-                <div class="statValue" id="statRaces">0</div>
-              </div>
-              <div class="stat">
-                <div class="statLabel">Characters</div>
-                <div class="statValue" id="statChars">0</div>
-              </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="recent">
-              <div class="row">
-                <div class="sideCardTitle">Recently Edited</div>
-                <button class="btn tiny ghost" id="btnClearRecent">Clear</button>
-              </div>
-              <div id="recentList" class="recentList"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div class="card">
-            <div class="cardHeader">
-              <h2>Start with structure</h2>
-              <div class="muted">Suggested lore sections</div>
-            </div>
-            <div class="cardBody">
-              <div class="chips" id="starterChips"></div>
-              <div class="muted small">Click a chip to add a new lore page.</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="cardHeader">
-              <h2>World rules</h2>
-              <div class="muted">Magic, tech, factions, laws</div>
-            </div>
-            <div class="cardBody">
-              <p class="muted">
-                This codex is designed like a “world bible” — clean pages, rich entries, quick linking,
-                and easy export for backups.
-              </p>
-              <div class="callout">
-                Tip: use <code>[[Page Name]]</code> inside lore text to create links.
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- LORE -->
-      <section class="view" id="view-lore">
-        <div class="split">
-          <div class="pane listPane">
-            <div class="paneHeader">
-              <div>
-                <h2>Lore</h2>
-                <div class="muted">Pages & sections</div>
-              </div>
-              <button class="btn" id="btnNewLore">New Page</button>
-            </div>
-
-            <div class="filters">
-              <input id="loreFilter" class="input" placeholder="Filter lore pages…" />
-              <select id="loreSectionFilter" class="select">
-                <option value="">All sections</option>
-              </select>
-            </div>
-
-            <div id="loreList" class="list"></div>
-          </div>
-
-          <div class="pane detailPane">
-            <div class="paneHeader">
-              <div class="crumbs" id="loreCrumbs"></div>
-              <div class="actions">
-                <button class="btn ghost" id="btnLoreEdit">Edit</button>
-                <button class="btn ghost" id="btnLoreDelete">Delete</button>
-              </div>
-            </div>
-
-            <div class="detail">
-              <div id="loreEmpty" class="empty">
-                Select a lore page on the left — or create a new one.
-              </div>
-
-              <div id="loreView" class="doc hidden">
-                <h2 id="loreTitle"></h2>
-                <div class="meta">
-                  <span id="loreSectionTag" class="tag"></span>
-                  <span class="muted" id="loreUpdated"></span>
-                </div>
-                <div id="loreBody" class="markdown"></div>
-              </div>
-
-              <div id="loreEditor" class="editor hidden">
-                <div class="editorRow">
-                  <label class="label">Title</label>
-                  <input id="loreTitleInput" class="input" />
-                </div>
-                <div class="editorRow">
-                  <label class="label">Section</label>
-                  <input id="loreSectionInput" class="input" placeholder="e.g., History, Magic, Locations" />
-                </div>
-                <div class="editorRow">
-                  <label class="label">Content (supports basic markdown + [[Links]])</label>
-                  <textarea id="loreBodyInput" class="textarea" rows="14"></textarea>
-                </div>
-                <div class="editorActions">
-                  <button class="btn" id="btnLoreSave">Save</button>
-                  <button class="btn ghost" id="btnLoreCancel">Cancel</button>
-                </div>
-
-                <div class="divider"></div>
-                <div class="muted small">Preview</div>
-                <div id="lorePreview" class="markdown preview"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- RACES -->
-      <section class="view" id="view-races">
-        <div class="split">
-          <div class="pane listPane">
-            <div class="paneHeader">
-              <div>
-                <h2>Races</h2>
-                <div class="muted">Species, lineages, peoples</div>
-              </div>
-              <button class="btn" id="btnNewRace">New Race</button>
-            </div>
-
-            <div class="filters">
-              <input id="raceFilter" class="input" placeholder="Filter races…" />
-            </div>
-
-            <div id="raceList" class="list"></div>
-          </div>
-
-          <div class="pane detailPane">
-            <div class="paneHeader">
-              <div class="crumbs" id="raceCrumbs"></div>
-              <div class="actions">
-                <button class="btn ghost" id="btnRaceEdit">Edit</button>
-                <button class="btn ghost" id="btnRaceDelete">Delete</button>
-              </div>
-            </div>
-
-            <div class="detail">
-              <div id="raceEmpty" class="empty">
-                Select a race — or create a new one.
-              </div>
-
-              <div id="raceView" class="doc hidden">
-                <h2 id="raceName"></h2>
-                <div class="meta">
-                  <span id="raceCategoryTag" class="tag"></span>
-                  <span class="muted" id="raceUpdated"></span>
-                </div>
-                <div class="kv">
-                  <div><div class="k">Vibe</div><div class="v" id="raceVibe"></div></div>
-                  <div><div class="k">Traits</div><div class="v" id="raceTraits"></div></div>
-                </div>
-                <div id="raceBody" class="markdown"></div>
-              </div>
-
-              <div id="raceEditor" class="editor hidden">
-                <div class="editorRow">
-                  <label class="label">Name</label>
-                  <input id="raceNameInput" class="input" />
-                </div>
-                <div class="editorRow">
-                  <label class="label">Category</label>
-                  <input id="raceCategoryInput" class="input" placeholder="e.g., Celestial, Mortal, Abyssal" />
-                </div>
-                <div class="editorRow">
-                  <label class="label">Vibe (one-liner)</label>
-                  <input id="raceVibeInput" class="input" placeholder="Short feel / theme" />
-                </div>
-                <div class="editorRow">
-                  <label class="label">Traits (comma separated)</label>
-                  <input id="raceTraitsInput" class="input" placeholder="e.g., luminous skin, calm aura, astral magic" />
-                </div>
-                <div class="editorRow">
-                  <label class="label">Description</label>
-                  <textarea id="raceBodyInput" class="textarea" rows="12"></textarea>
-                </div>
-                <div class="editorActions">
-                  <button class="btn" id="btnRaceSave">Save</button>
-                  <button class="btn ghost" id="btnRaceCancel">Cancel</button>
-                </div>
-
-                <div class="divider"></div>
-                <div class="muted small">Preview</div>
-                <div id="racePreview" class="markdown preview"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- CHARACTERS -->
-      <section class="view" id="view-characters">
-        <div class="split">
-          <div class="pane listPane">
-            <div class="paneHeader">
-              <div>
-                <h2>Characters</h2>
-                <div class="muted">Profiles, relationships, roles</div>
-              </div>
-              <button class="btn" id="btnNewChar">New Character</button>
-            </div>
-
-            <div class="filters">
-              <input id="charFilter" class="input" placeholder="Filter characters…" />
-              <select id="charRaceFilter" class="select">
-                <option value="">All races</option>
-              </select>
-            </div>
-
-            <div id="charList" class="list"></div>
-          </div>
-
-          <div class="pane detailPane">
-            <div class="paneHeader">
-              <div class="crumbs" id="charCrumbs"></div>
-              <div class="actions">
-                <button class="btn ghost" id="btnCharEdit">Edit</button>
-                <button class="btn ghost" id="btnCharDelete">Delete</button>
-              </div>
-            </div>
-
-            <div class="detail">
-              <div id="charEmpty" class="empty">
-                Select a character — or create a new one.
-              </div>
-
-              <div id="charView" class="doc hidden">
-                <div class="profileTop">
-                  <div class="avatar" id="charAvatar" aria-hidden="true">✶</div>
-                  <div>
-                    <h2 id="charName"></h2>
-                    <div class="meta">
-                      <span id="charRaceTag" class="tag"></span>
-                      <span id="charRoleTag" class="tag subtle"></span>
-                      <span class="muted" id="charUpdated"></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="kv">
-                  <div><div class="k">Age</div><div class="v" id="charAge"></div></div>
-                  <div><div class="k">Origin</div><div class="v" id="charOrigin"></div></div>
-                  <div><div class="k">Keywords</div><div class="v" id="charKeywords"></div></div>
-                </div>
-
-                <div class="divider"></div>
-                <div class="sideCardTitle">Bio</div>
-                <div id="charBio" class="markdown"></div>
-
-                <div class="divider"></div>
-                <div class="sideCardTitle">Relationships</div>
-                <div id="charRels" class="rels"></div>
-              </div>
-
-              <div id="charEditor" class="editor hidden">
-                <div class="editorGrid">
-                  <div class="editorRow">
-                    <label class="label">Name</label>
-                    <input id="charNameInput" class="input" />
-                  </div>
-                  <div class="editorRow">
-                    <label class="label">Race</label>
-                    <input id="charRaceInput" class="input" placeholder="e.g., Vespera, Aurestra" />
-                  </div>
-                  <div class="editorRow">
-                    <label class="label">Role / Title</label>
-                    <input id="charRoleInput" class="input" placeholder="e.g., Oracle of Dusk" />
-                  </div>
-                  <div class="editorRow">
-                    <label class="label">Age</label>
-                    <input id="charAgeInput" class="input" placeholder="e.g., 19 / ageless" />
-                  </div>
-                  <div class="editorRow">
-                    <label class="label">Origin</label>
-                    <input id="charOriginInput" class="input" placeholder="e.g., Moonlit Courts of ____" />
-                  </div>
-                  <div class="editorRow">
-                    <label class="label">Keywords (comma separated)</label>
-                    <input id="charKeywordsInput" class="input" placeholder="calm, radiant, secretive" />
-                  </div>
-                </div>
-
-                <div class="editorRow">
-                  <label class="label">Bio</label>
-                  <textarea id="charBioInput" class="textarea" rows="10"></textarea>
-                </div>
-
-                <div class="editorRow">
-                  <label class="label">Relationships (one per line: Name — type — note)</label>
-                  <textarea id="charRelsInput" class="textarea" rows="6" placeholder="Violethyn Emmara Kinsyl — ally — trusts her with the Codex"></textarea>
-                </div>
-
-                <div class="editorActions">
-                  <button class="btn" id="btnCharSave">Save</button>
-                  <button class="btn ghost" id="btnCharCancel">Cancel</button>
-                </div>
-
-                <div class="divider"></div>
-                <div class="muted small">Preview</div>
-                <div id="charPreview" class="markdown preview"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- SEARCH -->
-      <section class="view" id="view-search">
-        <div class="card">
-          <div class="cardHeader">
-            <h2>Search</h2>
-            <div class="muted">Find anything in your codex</div>
-          </div>
-          <div class="cardBody">
-            <input id="searchInput" class="input" placeholder="Type to search…" />
-            <div class="divider"></div>
-            <div id="searchResults" class="searchResults"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- SETTINGS -->
-      <section class="view" id="view-settings">
-        <div class="grid2">
-          <div class="card">
-            <div class="cardHeader">
-              <h2>World Settings</h2>
-              <div class="muted">Title + tagline</div>
-            </div>
-            <div class="cardBody">
-              <div class="editorRow">
-                <label class="label">World Title</label>
-                <input id="worldTitleInput" class="input" />
-              </div>
-              <div class="editorRow">
-                <label class="label">Tagline</label>
-                <input id="worldTaglineInput" class="input" />
-              </div>
-              <button class="btn" id="btnSaveWorld">Save World Settings</button>
-              <div class="muted small">Saved locally. Export for backups.</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="cardHeader">
-              <h2>Data</h2>
-              <div class="muted">Backup / reset</div>
-            </div>
-            <div class="cardBody">
-              <div class="callout">
-                Export creates a single <code>.json</code> file with everything (lore, races, characters).
-              </div>
-              <div class="row gap">
-                <button class="btn ghost" id="btnReset">Reset to Defaults</button>
-                <button class="btn danger" id="btnWipe">Wipe Local Data</button>
-              </div>
-              <div class="muted small">
-                Reset loads the default <code>data/world.json</code>. Wipe clears browser storage.
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
   </div>
 
-  <input id="filePicker" type="file" accept="application/json" hidden />
-  <script src="script.js"></script>
+  <script>
+    /**
+     * REQUIRED FILES:
+     *  - /entries/index.json  (manifest listing your entry json files)
+     *  - /entries/<anything>.json
+     *
+     * WHY: GitHub Pages cannot list directories from the browser.
+     */
+
+    const ENTRIES_INDEX_URL = "./entries/index.json";
+
+    // Entry JSON shape (what your /entries/*.json files should contain):
+    // {
+    //   "id": "neila_ifrithia",
+    //   "name": "Neila Ifrithia",
+    //   "image": "images/Neila.png",
+    //   "classes": ["Enchantress"],
+    //   "race": "Succubus",
+    //   "stats": { "STR":10, "DEX":12, "CON":11, "INT":16, "WIS":13, "CHA":20 },
+    //   "description": "Text here..."
+    // }
+
+    // /entries/index.json shape:
+    // {
+    //   "entries": [
+    //     { "file": "neila_ifrithia.json" },
+    //     { "file": "vespera_female.json" }
+    //   ]
+    // }
+
+    const elList = document.getElementById("list");
+    const elStatus = document.getElementById("status");
+    const elLeft = document.getElementById("pageLeft");
+    const elRight = document.getElementById("pageRight");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    let entryFiles = [];
+    let entries = [];
+    let currentIndex = 0;
+
+    function setStatus(msg) {
+      elStatus.textContent = msg || "";
+    }
+
+    async function fetchJSON(url) {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to load ${url} (${res.status})`);
+      return await res.json();
+    }
+
+    function safeText(v) {
+      return (v === null || v === undefined) ? "" : String(v);
+    }
+
+    function normalizeEntry(raw, fallbackId) {
+      const e = raw && typeof raw === "object" ? raw : {};
+      const id = safeText(e.id || fallbackId || e.name || "entry").trim() || "entry";
+      const name = safeText(e.name || id).trim();
+      const image = safeText(e.image || "").trim();
+      const classes = Array.isArray(e.classes) ? e.classes.map(safeText).filter(Boolean) : [];
+      const race = safeText(e.race || "").trim();
+      const stats = (e.stats && typeof e.stats === "object") ? e.stats : {};
+      const description = safeText(e.description || "").trim();
+
+      return { id, name, image, classes, race, stats, description };
+    }
+
+    function renderSidebar() {
+      elList.innerHTML = "";
+
+      entries.forEach((e, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "entry-btn" + (idx === currentIndex ? " active" : "");
+        btn.type = "button";
+        btn.innerHTML = `
+          <div class="title">${escapeHTML(e.name)}</div>
+          <div class="meta">${escapeHTML(e.race || "Unknown Race")}${e.classes.length ? " • " + escapeHTML(e.classes.join(", ")) : ""}</div>
+        `;
+        btn.addEventListener("click", () => {
+          currentIndex = idx;
+          renderSidebar();
+          renderSpread();
+        });
+        elList.appendChild(btn);
+      });
+
+      if (entries.length === 0) {
+        elList.innerHTML = `<div style="color:#f4ead7;opacity:.9;font-family:var(--mono);font-size:12px;">
+          No entries found. Add /entries/index.json and at least one /entries/*.json.
+        </div>`;
+      }
+    }
+
+    function escapeHTML(s) {
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderEntryPage(e, side) {
+      const sideLabel = side === "left" ? "Entry" : "Details";
+      const classesLine = e.classes.length ? e.classes.join(", ") : "—";
+
+      const tags = [
+        e.race ? `Race: ${e.race}` : null,
+        e.classes.length ? `Class: ${classesLine}` : null
+      ].filter(Boolean);
+
+      const statsKeys = Object.keys(e.stats || {});
+      const statsHTML = statsKeys.length
+        ? `
+          <div class="stats">
+            <h3>Stats</h3>
+            <div class="grid">
+              ${statsKeys.map(k => `
+                <div class="stat">
+                  <div class="k">${escapeHTML(k)}</div>
+                  <div class="v">${escapeHTML(e.stats[k])}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `
+        : `
+          <div class="stats">
+            <h3>Stats</h3>
+            <div style="font-family:var(--mono);font-size:12px;color:var(--ink2);">No stats set.</div>
+          </div>
+        `;
+
+      const imgHTML = e.image
+        ? `
+          <div class="img-wrap">
+            <div class="tape"></div><div class="tape t2"></div>
+            <img class="photo" src="${escapeHTML(e.image)}" alt="${escapeHTML(e.name)}" />
+          </div>
+        `
+        : `
+          <div class="img-wrap">
+            <div class="tape"></div><div class="tape t2"></div>
+            <div class="photo" style="width:min(440px,100%);height:260px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--ink2);background:rgba(255,255,255,.35);">
+              No image set
+            </div>
+          </div>
+        `;
+
+      // Left page = image + short meta + description
+      if (side === "left") {
+        return `
+          <h2 class="p-title">${escapeHTML(e.name)}</h2>
+          <div class="p-sub">${escapeHTML(sideLabel)} • id: ${escapeHTML(e.id)}</div>
+          ${tags.length ? `<div class="tagrow">${tags.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join("")}</div>` : ""}
+          ${imgHTML}
+          <div class="desc">${escapeHTML(e.description || "No description yet.")}</div>
+        `;
+      }
+
+      // Right page = repeated meta + stats + extra spacing (keeps journal feel)
+      return `
+        <h2 class="p-title">${escapeHTML(e.name)}</h2>
+        <div class="p-sub">${escapeHTML(sideLabel)} • ${escapeHTML(e.race || "Unknown Race")} • ${escapeHTML(classesLine)}</div>
+        ${statsHTML}
+        <div style="margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--ink2);">
+          Tip: Edit this entry by opening the JSON file in <code style="font-family:var(--mono)">/entries/${escapeHTML(entryFiles[currentIndex] || "")}</code>.
+        </div>
+      `;
+    }
+
+    function renderSpread() {
+      const e = entries[currentIndex];
+      if (!e) {
+        elLeft.innerHTML = `<h2 class="p-title">No Entries</h2><div class="desc">Create /entries/index.json, then add .json entry files.</div>`;
+        elRight.innerHTML = `<h2 class="p-title">How to Add</h2><div class="desc">See the JSON templates in the script comment at the bottom of index.html.</div>`;
+        return;
+      }
+
+      elLeft.innerHTML = renderEntryPage(e, "left");
+      elRight.innerHTML = renderEntryPage(e, "right");
+
+      // buttons enabled state
+      prevBtn.disabled = currentIndex <= 0;
+      nextBtn.disabled = currentIndex >= entries.length - 1;
+      prevBtn.style.opacity = prevBtn.disabled ? .5 : 1;
+      nextBtn.style.opacity = nextBtn.disabled ? .5 : 1;
+      prevBtn.style.cursor = prevBtn.disabled ? "default" : "pointer";
+      nextBtn.style.cursor = nextBtn.disabled ? "default" : "pointer";
+    }
+
+    async function loadAllEntries() {
+      setStatus("Loading /entries/index.json ...");
+
+      const idx = await fetchJSON(ENTRIES_INDEX_URL);
+      const list = Array.isArray(idx.entries) ? idx.entries : [];
+      entryFiles = list
+        .map(x => (x && typeof x === "object" ? x.file : null))
+        .map(safeText)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      if (entryFiles.length === 0) {
+        entries = [];
+        setStatus("No entry files listed in /entries/index.json.");
+        renderSidebar();
+        renderSpread();
+        return;
+      }
+
+      setStatus(`Loading ${entryFiles.length} entries...`);
+
+      const loaded = [];
+      for (const f of entryFiles) {
+        try {
+          const raw = await fetchJSON(`./entries/${f}`);
+          loaded.push(normalizeEntry(raw, f.replace(/\.json$/i, "")));
+        } catch (err) {
+          loaded.push(normalizeEntry({
+            id: f.replace(/\.json$/i, ""),
+            name: `(Failed to load) ${f}`,
+            race: "",
+            classes: [],
+            image: "",
+            stats: {},
+            description: String(err?.message || err)
+          }, f.replace(/\.json$/i, "")));
+        }
+      }
+
+      entries = loaded;
+
+      // start at first
+      currentIndex = 0;
+      setStatus("");
+      renderSidebar();
+      renderSpread();
+    }
+
+    function hookNav() {
+      prevBtn.addEventListener("click", () => {
+        if (currentIndex <= 0) return;
+        currentIndex--;
+        renderSidebar();
+        renderSpread();
+      });
+      nextBtn.addEventListener("click", () => {
+        if (currentIndex >= entries.length - 1) return;
+        currentIndex++;
+        renderSidebar();
+        renderSpread();
+      });
+
+      // click pages to turn
+      elLeft.addEventListener("click", (e) => {
+        // allow links/selection without flipping
+        if (e.target.closest("a, button, code, input, textarea, select")) return;
+        if (currentIndex <= 0) return;
+        currentIndex--;
+        renderSidebar();
+        renderSpread();
+      });
+      elRight.addEventListener("click", (e) => {
+        if (e.target.closest("a, button, code, input, textarea, select")) return;
+        if (currentIndex >= entries.length - 1) return;
+        currentIndex++;
+        renderSidebar();
+        renderSpread();
+      });
+
+      // keyboard
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") prevBtn.click();
+        if (e.key === "ArrowRight") nextBtn.click();
+      });
+    }
+
+    hookNav();
+    loadAllEntries().catch(err => {
+      setStatus(`ERROR:\n${String(err?.message || err)}\n\nMake sure /entries/index.json exists.`);
+      renderSidebar();
+      renderSpread();
+    });
+  </script>
+
+  <!--
+    Create these files:
+
+    /entries/index.json
+    {
+      "entries": [
+        { "file": "neila_ifrithia.json" },
+        { "file": "vespera_female.json" }
+      ]
+    }
+
+    /entries/neila_ifrithia.json
+    {
+      "id": "neila_ifrithia",
+      "name": "Neila Ifrithia",
+      "image": "images/Neila.png",
+      "classes": ["Enchantress"],
+      "race": "Succubus",
+      "stats": { "STR": 10, "DEX": 12, "CON": 11, "INT": 16, "WIS": 13, "CHA": 20 },
+      "description": "Write your description here..."
+    }
+  -->
 </body>
 </html>

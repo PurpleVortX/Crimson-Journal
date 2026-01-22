@@ -1,0 +1,16 @@
+{
+  "id": "vespera",
+  "name": "Vespera",
+  "image": "images/vespera.png",
+  "classes": ["Arcanist", "Enchantress"],
+  "race": "Vespera",
+  "stats": {
+    "STR": 8,
+    "DEX": 12,
+    "CON": 10,
+    "INT": 16,
+    "WIS": 13,
+    "CHA": 18
+  },
+  "description": "Vespera are humanoid beings whose forms are shaped as much by will and magic as by flesh. Their beauty feels deliberate rather than ornamental, as if every feature has been chosen with intent. Eyes shimmer faintly like polished glass, hair never quite settling, and subtle arcane markings trace their skin, glowing softly when magic stirs.\n\nTheir presence carries an uncanny sense of idealization—reality itself seems to adjust to flatter them. Though often mistaken for illusions or divine constructs, Vespera are very real, and their mastery over perception, self-image, and arcane energy makes them both admired and feared.\n\nAmong their kind, self-perception is sacred. A Vespera who loses control of their identity risks becoming something darker, warped by fractured ideals and corrupted magic."
+}
