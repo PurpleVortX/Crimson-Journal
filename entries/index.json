@@ -1,5 +1,19 @@
 {
   "entries": [
-    { "file": "vespera.json" }
+    { "file": "race_goliath.json" },
+    { "file": "race_dwarf.json" },
+    { "file": "race_human.json" },
+    { "file": "race_elf.json" },
+    { "file": "race_gnome.json" },
+    { "file": "race_aasimar.json" },
+    { "file": "race_halfling.json" },
+    { "file": "race_succubus.json" },
+    { "file": "race_vampire.json" },
+    { "file": "race_nereid.json" },
+    { "file": "race_harpy.json" },
+    { "file": "race_incubus.json" },
+    { "file": "race_tiefling.json" },
+    { "file": "race_vespera.json" },
+    { "file": "race_dark_vespera.json" }
   ]
 }

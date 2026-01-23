@@ -1,0 +1,15 @@
+{
+  "id": "race_elf",
+  "name": "Elf",
+  "race": "Elf",
+  "classes": ["Mage"],
+  "image": "images/races/elf.png",
+  "stats": {
+    "LEARN": 2
+  },
+  "weaknesses": {
+    "shadow": 1.15,
+    "holy": 0.95
+  },
+  "description": "Ancient and graceful, Elves see the flow of magic as naturally as breathing."
+}

@@ -1,0 +1,15 @@
+{
+  "id": "race_succubus",
+  "name": "Succubus",
+  "race": "Succubus",
+  "classes": ["Enchantress"],
+  "image": "images/races/succubus.png",
+  "stats": {
+    "LEARN": 1
+  },
+  "weaknesses": {
+    "holy": 1.25,
+    "shadow": 0.9
+  },
+  "description": "A master of glamour and manipulation, weaving illusions and bending attention with effortless grace."
+}

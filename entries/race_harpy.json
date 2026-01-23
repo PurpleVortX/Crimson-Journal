@@ -1,0 +1,15 @@
+{
+  "id": "race_harpy",
+  "name": "Harpy",
+  "race": "Harpy",
+  "classes": ["Siren"],
+  "image": "images/races/harpy.png",
+  "stats": {
+    "LEARN": 3
+  },
+  "weaknesses": {
+    "ice": 1.1,
+    "sonic": 0.95
+  },
+  "description": "A creature of wind and wild song—beautiful, dangerous, and impossible to ignore."
+}

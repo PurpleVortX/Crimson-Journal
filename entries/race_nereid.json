@@ -1,0 +1,15 @@
+{
+  "id": "race_nereid",
+  "name": "Nereid",
+  "race": "Nereid",
+  "classes": ["Siren"],
+  "image": "images/races/nereid.png",
+  "stats": {
+    "LEARN": 2
+  },
+  "weaknesses": {
+    "electric": 1.25,
+    "sonic": 0.9
+  },
+  "description": "A spirit of the sea whose voice carries the rhythm of tides and storms."
+}

@@ -1,0 +1,15 @@
+{
+  "id": "race_aasimar",
+  "name": "Aasimar",
+  "race": "Aasimar",
+  "classes": ["Cleric"],
+  "image": "images/races/aasimar.png",
+  "stats": {
+    "LEARN": 1
+  },
+  "weaknesses": {
+    "shadow": 1.25,
+    "holy": 0.85
+  },
+  "description": "Touched by celestial power, Aasimar channel sacred energy with natural ease."
+}
