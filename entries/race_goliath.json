@@ -1,15 +1,11 @@
 {
   "id": "race_goliath",
+  "type": "race",
   "name": "Goliath",
   "race": "Goliath",
   "classes": ["Warrior"],
-  "image": "images/races/goliath.png",
-  "stats": {
-    "LEARN": 2
-  },
-  "weaknesses": {
-    "ice": 1.15,
-    "holy": 0.9
-  },
-  "description": "Born of mountain peaks and endless storms, Goliaths are giants of flesh and bone. They endure what would break others."
+  "image": "media/images/goliath.png",
+  "stats": { "LEARN": 2 },
+  "weaknesses": { "ice": 1.15, "holy": 0.9 },
+  "description": "Towering and unyielding, Goliaths are forged by harsh climates and constant struggle."
 }

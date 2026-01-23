@@ -1,16 +1,11 @@
 {
   "id": "race_incubus",
+  "type": "race",
   "name": "Incubus",
   "race": "Incubus",
   "classes": ["Incubus"],
-  "image": "images/races/incubus.png",
-  "stats": {
-    "LEARN": 1
-  },
-  "weaknesses": {
-    "holy": 1.2,
-    "shadow": 0.9,
-    "charm": 0.9
-  },
-  "description": "A predator of the psyche, thriving on fear, doubt, and whispered temptation."
+  "image": "media/images/incubus.png",
+  "stats": { "LEARN": 1 },
+  "weaknesses": { "holy": 1.2, "shadow": 0.9, "charm": 0.9 },
+  "description": "Masters of psychological domination, feeding on fear and obsession."
 }

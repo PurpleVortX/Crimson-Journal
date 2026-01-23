@@ -1,0 +1,11 @@
+{
+  "id": "race_dark_vespera",
+  "type": "race",
+  "name": "Dark Vespera",
+  "race": "Dark Vespera",
+  "classes": ["Arcanist"],
+  "image": "media/images/dark_vespera.png",
+  "stats": { "LEARN": 0 },
+  "weaknesses": { "holy": 1.4, "void": 0.85 },
+  "description": "A corrupted Vespera whose identity shattered, allowing dark magic to consume her entirely."
+}

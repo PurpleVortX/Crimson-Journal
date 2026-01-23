@@ -1,15 +1,11 @@
 {
   "id": "race_dwarf",
+  "type": "race",
   "name": "Dwarf",
   "race": "Dwarf",
   "classes": ["Warrior"],
-  "image": "images/races/dwarf.png",
-  "stats": {
-    "LEARN": 3
-  },
-  "weaknesses": {
-    "sonic": 1.1,
-    "fire": 0.9
-  },
-  "description": "Stout and resilient, Dwarves are the bedrock of the world’s defenses—unyielding and steady."
+  "image": "media/images/dwarf.png",
+  "stats": { "LEARN": 3 },
+  "weaknesses": { "sonic": 1.1, "fire": 0.9 },
+  "description": "Dwarves are stout, disciplined, and resilient, thriving beneath stone and fire."
 }

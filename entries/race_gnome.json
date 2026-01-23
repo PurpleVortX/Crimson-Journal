@@ -1,15 +1,11 @@
 {
   "id": "race_gnome",
+  "type": "race",
   "name": "Gnome",
   "race": "Gnome",
   "classes": ["Mage"],
-  "image": "images/races/gnome.png",
-  "stats": {
-    "LEARN": 3
-  },
-  "weaknesses": {
-    "physical": 1.1,
-    "ice": 0.9
-  },
-  "description": "Brilliant and curious, Gnomes treat magic like a science—always experimenting, always learning."
+  "image": "media/images/gnome.png",
+  "stats": { "LEARN": 3 },
+  "weaknesses": { "physical": 1.1, "ice": 0.9 },
+  "description": "Gnomes approach magic as science, curiosity driving constant experimentation."
 }

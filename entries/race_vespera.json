@@ -1,0 +1,11 @@
+{
+  "id": "race_vespera",
+  "type": "race",
+  "name": "Vespera",
+  "race": "Vespera",
+  "classes": ["Arcanist", "Enchantress"],
+  "image": "media/images/vespera.png",
+  "stats": { "LEARN": 1 },
+  "weaknesses": { "void": 1.25, "charm": 0.85 },
+  "description": "Vespera are beings shaped by will and magic, their beauty and identity deliberately perfected."
+}

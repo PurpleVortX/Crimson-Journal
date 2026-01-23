@@ -1,16 +1,11 @@
 {
   "id": "race_vampire",
+  "type": "race",
   "name": "Vampire",
   "race": "Vampire",
   "classes": ["Enchantress"],
-  "image": "images/races/vampire.png",
-  "stats": {
-    "LEARN": 2
-  },
-  "weaknesses": {
-    "holy": 1.3,
-    "fire": 1.15,
-    "shadow": 0.9
-  },
-  "description": "Eternal and predatory, Vampires wield charm and fear with equal precision."
+  "image": "media/images/vampire.png",
+  "stats": { "LEARN": 2 },
+  "weaknesses": { "holy": 1.3, "fire": 1.15, "shadow": 0.9 },
+  "description": "Elegant predators sustained by blood and fear, eternal yet cursed."
 }

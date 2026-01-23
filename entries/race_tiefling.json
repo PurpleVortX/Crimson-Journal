@@ -1,15 +1,11 @@
 {
   "id": "race_tiefling",
+  "type": "race",
   "name": "Tiefling",
   "race": "Tiefling",
   "classes": ["Incubus"],
-  "image": "images/races/tiefling.png",
-  "stats": {
-    "LEARN": 2
-  },
-  "weaknesses": {
-    "holy": 1.15,
-    "fire": 0.9
-  },
-  "description": "Marked by infernal blood, Tieflings wield unsettling charisma and stubborn resilience."
+  "image": "media/images/tiefling.png",
+  "stats": { "LEARN": 2 },
+  "weaknesses": { "holy": 1.15, "fire": 0.9 },
+  "description": "Marked by infernal blood, Tieflings balance power with stigma."
 }

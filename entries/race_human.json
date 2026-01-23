@@ -1,15 +1,11 @@
 {
   "id": "race_human",
+  "type": "race",
   "name": "Human",
   "race": "Human",
   "classes": ["Rogue"],
-  "image": "images/races/human.png",
-  "stats": {
-    "LEARN": 5
-  },
-  "weaknesses": {
-    "shadow": 1.1,
-    "charm": 1.1
-  },
-  "description": "Versatile and adaptable. Humans thrive through cunning, determination, and a knack for turning small advantages into victory."
+  "image": "media/images/human.png",
+  "stats": { "LEARN": 5 },
+  "weaknesses": { "shadow": 1.1, "charm": 1.1 },
+  "description": "Humans adapt faster than any other race, thriving through ingenuity and ambition."
 }

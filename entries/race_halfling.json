@@ -1,15 +1,11 @@
 {
-  "id": "race_halfling",
-  "name": "Halfling",
-  "race": "Halfling",
+  "id": "race_aasimar",
+  "type": "race",
+  "name": "Aasimar",
+  "race": "Aasimar",
   "classes": ["Cleric"],
-  "image": "images/races/halfling.png",
-  "stats": {
-    "LEARN": 4
-  },
-  "weaknesses": {
-    "physical": 1.1,
-    "charm": 0.95
-  },
-  "description": "Often underestimated, Halflings draw strength from community and quiet faith."
+  "image": "media/images/aasimar.png",
+  "stats": { "LEARN": 1 },
+  "weaknesses": { "shadow": 1.25, "holy": 0.85 },
+  "description": "Touched by celestial power, Aasimar channel divine energy effortlessly."
 }

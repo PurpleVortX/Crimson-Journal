@@ -14,6 +14,7 @@
     { "file": "race_incubus.json" },
     { "file": "race_tiefling.json" },
     { "file": "race_vespera.json" },
-    { "file": "race_dark_vespera.json" }
+    { "file": "race_dark_vespera.json" },
+    { "file": "npc_neila_ifrithia.json" }
   ]
 }
